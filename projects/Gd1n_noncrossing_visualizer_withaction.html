@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>G(d,1,n) Noncrossing Multichain Visualizer</title>
+  <title>G(d,1,n) / G(d,d,n) Noncrossing Multichain Visualizer</title>
   <style>
     :root {
       --ink: #172033;
@@ -27,6 +27,8 @@
     }
 
     * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
 
     body {
       margin: 0;
@@ -123,6 +125,42 @@
     .field input:focus {
       border-color: var(--primary);
       box-shadow: 0 0 0 4px rgba(37, 87, 214, 0.12);
+    }
+
+    .positivity-toggle {
+      grid-column: 1 / -1;
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 8px 11px;
+      border: 1px solid #c8d1df;
+      border-radius: 10px;
+      color: #344054;
+      background: #fff;
+      font-size: 0.84rem;
+      font-weight: 720;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .positivity-toggle input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .positivity-toggle:has(input:focus-visible) {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 87, 214, 0.12);
+    }
+
+    .positivity-toggle:has(input:disabled) {
+      cursor: not-allowed;
+      opacity: 0.58;
     }
 
     .actions {
@@ -449,20 +487,133 @@
         animation-duration: 0.001ms !important;
       }
     }
+
+
+    .group-mode-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(79, 98, 130, 0.16);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(247, 249, 253, 0.96), rgba(239, 244, 251, 0.86));
+      font-weight: 760;
+      color: #344054;
+    }
+
+    .group-mode-selector .mode-label {
+      min-width: 92px;
+      font-size: 0.92rem;
+    }
+
+    .group-mode-selector .mode-label:first-child { text-align: right; }
+    .group-mode-selector .mode-label:last-child { text-align: left; }
+
+    .mode-switch {
+      position: relative;
+      display: inline-flex;
+      width: 58px;
+      height: 31px;
+      flex: 0 0 auto;
+    }
+
+    .mode-switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mode-switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #667085;
+      box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.15);
+      cursor: pointer;
+      transition: background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .mode-switch-track::after {
+      content: "";
+      position: absolute;
+      width: 23px;
+      height: 23px;
+      top: 4px;
+      left: 5px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 7px rgba(16, 24, 40, 0.28);
+      transition: transform 180ms ease;
+    }
+
+    .mode-switch input:checked + .mode-switch-track {
+      background: #7f56d9;
+      box-shadow: inset 0 0 0 1px rgba(88, 52, 163, 0.32);
+    }
+
+    .mode-switch input:checked + .mode-switch-track::after {
+      transform: translateX(25px);
+    }
+
+    .mode-switch input:focus-visible + .mode-switch-track {
+      outline: 3px solid rgba(127, 86, 217, 0.28);
+      outline-offset: 3px;
+    }
+
+    .mode-switch input:disabled + .mode-switch-track {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .gdd-mode-note {
+      width: min(760px, 100%);
+      margin: 0 auto 14px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: rgba(127, 86, 217, 0.08);
+      color: #5b3e9e;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .gdd-action-button {
+      background: linear-gradient(135deg, #7f56d9, #6941c6);
+    }
+
+    .gdd-action-button:hover:not(:disabled) {
+      background: linear-gradient(135deg, #6941c6, #53389e);
+    }
+
+    .legend-swatch.outer-block { background: rgba(55, 111, 177, 0.24); border-color: rgba(40, 99, 164, 0.95); }
+    .legend-swatch.inner-block { background: rgba(230, 174, 49, 0.24); border-color: rgba(184, 128, 16, 0.95); }
+    .legend-swatch.annular-block { background: rgba(127, 86, 217, 0.20); border-color: rgba(105, 65, 198, 0.95); }
+    .legend-swatch.zero-block { background: rgba(71, 84, 103, 0.18); border-color: rgba(52, 64, 84, 0.95); }
+
   </style>
 </head>
 <body>
   <main class="page">
     <header class="hero">
       <p class="eyebrow">Positive noncrossing parking</p>
-      <h1><i>G</i>(<i>d</i>, 1, <i>n</i>) noncrossing multichains</h1>
-      <p class="subtitle">
+      <h1 id="hero-title"><i>G</i>(<i>d</i>, 1, <i>n</i>) noncrossing multichains</h1>
+      <p id="hero-subtitle" class="subtitle">
         Generate an inclusion-ordered multichain, apply δ and the shuffle map, then construct the
         Kreweras complement using interleaved prime nodes and noncrossing convex hulls.
       </p>
     </header>
 
     <section class="control-panel" aria-label="Visualizer controls">
+      <div class="group-mode-selector" role="group" aria-label="Reflection group family">
+        <span class="mode-label"><i>G</i>(<i>d</i>,1,<i>n</i>)</span>
+        <label class="mode-switch" for="group-mode" title="Switch reflection-group family">
+          <input type="checkbox" id="group-mode" aria-label="Use G(d,d,n) mode">
+          <span class="mode-switch-track" aria-hidden="true"></span>
+        </label>
+        <span class="mode-label"><i>G</i>(<i>d</i>,<i>d</i>,<i>n</i>)</span>
+      </div>
+      <p id="gdd-mode-note" class="gdd-mode-note" hidden></p>
       <div class="parameter-grid">
         <div class="field">
           <label for="d_val">Color order <i>d</i></label>
@@ -476,6 +627,10 @@
           <label for="k_val">Chain length <i>k</i></label>
           <input type="number" id="k_val" value="3" min="1" max="12" inputmode="numeric">
         </div>
+        <label id="positive-mode-wrap" class="positivity-toggle" for="positive-mode">
+          <input type="checkbox" id="positive-mode" checked>
+          <span>Force positive multichain (<i>π</i><sub>k</sub> has full support)</span>
+        </label>
       </div>
       <div class="actions">
         <button id="generate-btn" type="button">Generate multichain</button>
@@ -485,10 +640,10 @@
     </section>
 
     <ol class="pipeline" aria-label="Transformation stages">
-      <li data-stage="chain" class="active"><span class="step-number">1</span><span>Multichain π₁ ≤ ··· ≤ πₖ</span></li>
-      <li data-stage="shuffle"><span class="step-number">2</span><span>δ factors + shuffle Sf</span></li>
-      <li data-stage="overlay"><span class="step-number">3</span><span>Kreweras overlay</span></li>
-      <li data-stage="final"><span class="step-number">4</span><span>Final ∇ image</span></li>
+      <li id="pipeline-chain" data-stage="chain" class="active"><span class="step-number">1</span><span class="stage-label">Multichain π₁ ≤ ··· ≤ πₖ</span></li>
+      <li id="pipeline-shuffle" data-stage="shuffle"><span class="step-number">2</span><span class="stage-label">δ factors + shuffle Sf</span></li>
+      <li id="pipeline-overlay" data-stage="overlay"><span class="step-number">3</span><span class="stage-label">Kreweras overlay</span></li>
+      <li id="pipeline-final" data-stage="final"><span class="step-number">4</span><span class="stage-label">Final ∇ image</span></li>
     </ol>
 
     <div id="status-message" role="status" aria-live="polite" data-tone="info"></div>
@@ -497,7 +652,7 @@
 
     <section id="single-model-container" aria-label="Transformed model" hidden></section>
 
-    <p class="hint">
+    <p id="editing-hint" class="hint">
       Editing: click two nodes in any πᵣ card. Different blocks are merged (with all <i>d</i> symmetric copies);
       nodes in the same block are separated by removing a path edge. Any edit invalidates the transformed view.
     </p>
@@ -512,9 +667,23 @@
     const REDUCED_MOTION = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let d_global = 3;
+    // rank_global is the input rank. In G(d,d,n) mode, n_global stores n-1,
+    // the number of outer values in the Bessis-Corran model.
+    let rank_global = 6;
     let n_global = 6;
     let k_global = 3;
     let N_global = 18;
+    let groupType = "gd1";
+
+    // G(d,d,n) base-model and annular-action state.
+    let gddCentralAnchor = null;
+    let gddCentralAttachStep = null;
+    let gddBaseCase = "inner";
+    let gddGeneratedRanks = [];
+    let gddDiskPositions = [];
+    let gddActionBlocks = null;
+    let gddActionInitialKey = "";
+    let gddActionStep = 0;
 
     // Each entry stores edge representatives introduced at that step. Every representative
     // is expanded through all d cyclic shifts when a partition is reconstructed.
@@ -533,7 +702,7 @@
     let singleCanvas = null;
     let singleLogicalSize = 0;
 
-    // State for the positive Kreweras action K from Theorem 4.8.
+    // State for either the positive three-case action or the unrestricted Z_kh rotation.
     let kActionPermutation = null;
     let kActionBlocks = null;
     let kActionInitialPermutation = null;
@@ -548,6 +717,21 @@
     const generateButton = document.getElementById("generate-btn");
     const shuffleButton = document.getElementById("shuffle-btn");
     const labelsButton = document.getElementById("labels-btn");
+    const positiveModeCheckbox = document.getElementById("positive-mode");
+    const positiveModeWrap = document.getElementById("positive-mode-wrap");
+    const groupModeCheckbox = document.getElementById("group-mode");
+    const gddModeNote = document.getElementById("gdd-mode-note");
+    const heroTitle = document.getElementById("hero-title");
+    const heroSubtitle = document.getElementById("hero-subtitle");
+    const editingHint = document.getElementById("editing-hint");
+
+    function isGddMode() {
+      return groupType === "gdd";
+    }
+
+    function positiveModeEnabled() {
+      return positiveModeCheckbox.checked;
+    }
 
     class DisjointSet {
       constructor(size) {
@@ -568,6 +752,13 @@
         this.parent[rb] = ra;
         if (this.rank[ra] === this.rank[rb]) this.rank[ra] += 1;
         return true;
+      }
+
+      clone() {
+        const copy = new DisjointSet(this.parent.length);
+        copy.parent = this.parent.slice();
+        copy.rank = this.rank.slice();
+        return copy;
       }
 
       blocks(orderRank = null) {
@@ -611,7 +802,25 @@
       statusDiv.dataset.tone = tone;
     }
 
+    function updateTransformationControls() {
+      // The transformation is a forward workflow. Regenerating or editing the
+      // chain restores its first button; there are no redundant view toggles.
+      shuffleButton.hidden = Boolean(transformData) && currentView !== "chain";
+      labelsButton.hidden = true;
+      const stages = {
+        "view-overlay-btn": "shuffle",
+        "view-final-btn": "overlay",
+        "k-action-btn": "final",
+        "gdd-action-btn": "gdd-annulus"
+      };
+      for (const [id, stage] of Object.entries(stages)) {
+        const button = document.getElementById(id);
+        if (button) button.hidden = currentView !== stage;
+      }
+    }
+
     function setPipeline(stage) {
+      updateTransformationControls();
       const order = ["chain", "shuffle", "overlay", "final"];
       const activeIndex = order.indexOf(stage);
       document.querySelectorAll(".pipeline li").forEach(item => {
@@ -622,9 +831,12 @@
     }
 
     function setButtonsDisabled(disabled) {
+      updateTransformationControls();
       generateButton.disabled = disabled;
       shuffleButton.disabled = disabled || multichainEdges.length === 0;
       labelsButton.disabled = disabled;
+      positiveModeCheckbox.disabled = disabled || isGddMode();
+      groupModeCheckbox.disabled = disabled;
       document.querySelectorAll("#single-model-container button").forEach(button => {
         button.disabled = disabled;
       });
@@ -632,6 +844,10 @@
       if (kActionButton) {
         kActionButton.disabled = disabled || currentView !== "final" ||
           !kActionPermutation || Boolean(kActionIssue);
+      }
+      const gddActionButton = document.getElementById("gdd-action-btn");
+      if (gddActionButton) {
+        gddActionButton.disabled = disabled || !transformData || !isGddMode();
       }
     }
 
@@ -733,6 +949,13 @@
       for (let s = step; s < k_global; s += 1) {
         const candidate = partitionAt(s, edge, step);
         if (!isNoncrossingBlocks(candidate.blocks(baseRank), baseRank)) return false;
+        if (isGddMode()) {
+          const centerAttached = gddCenterAttachedAt(s);
+          if (!areGddDiskBlocksNoncrossing(candidate, centerAttached, gddCentralAnchor)) return false;
+          const labelledBlocks = buildGddLabeledBlocksFromDsu(candidate, s);
+          const candidatePermutation = gddBlocksToPermutation(labelledBlocks, rank_global);
+          if (!isGddGroupPermutation(candidatePermutation, rank_global)) return false;
+        }
       }
       return true;
     }
@@ -779,8 +1002,341 @@
       }
     }
 
-    function blocksToPermutation(blocks, rank) {
-      const permutation = Array.from({ length: N_global }, (_, i) => i);
+
+    function gddCenterAttachedAt(step) {
+      return gddCentralAnchor != null && Number.isInteger(gddCentralAttachStep) &&
+        step >= gddCentralAttachStep;
+    }
+
+    function buildGddDiskPositions() {
+      const positions = new Array(N_global + 1);
+      baseOrder.forEach((node, index) => {
+        const angle = -Math.PI / 2 + (index * TAU) / N_global;
+        positions[node] = { x: Math.cos(angle), y: Math.sin(angle) };
+      });
+      positions[N_global] = { x: 0, y: 0 };
+      return positions;
+    }
+
+    function gddDiskBlocksFromState(dsu, centerAttached, centralAnchor) {
+      const blocks = dsu.blocks(baseRank).map(block => block.slice());
+      if (!centerAttached || centralAnchor == null) {
+        blocks.push([N_global]);
+        return blocks;
+      }
+
+      const centralBlock = blocks.find(block => block.includes(centralAnchor));
+      if (!centralBlock) throw new Error("The central G(d,d,n) anchor is not present in the outer partition.");
+      centralBlock.push(N_global);
+      return blocks;
+    }
+
+    function areGddDiskBlocksNoncrossing(dsu, centerAttached, centralAnchor) {
+      const outerBlocks = dsu.blocks(baseRank);
+      if (!isNoncrossingBlocks(outerBlocks, baseRank)) return false;
+
+      const blocks = gddDiskBlocksFromState(dsu, centerAttached, centralAnchor);
+      const hulls = blocks.map(block => convexHull(block.map(node => gddDiskPositions[node])));
+      for (let left = 0; left < hulls.length; left += 1) {
+        for (let right = left + 1; right < hulls.length; right += 1) {
+          if (hullsIntersect(hulls[left], hulls[right])) return false;
+        }
+      }
+      return true;
+    }
+
+    function gddOuterBlockOrbitStats(dsu) {
+      const blocks = dsu.blocks();
+      const visited = new Set();
+      let nonzeroOrbits = 0;
+      let zeroBlocks = 0;
+
+      for (const block of blocks) {
+        const key = block.slice().sort((a, b) => a - b).join(",");
+        if (visited.has(key)) continue;
+
+        const orbitKeys = new Set();
+        for (let shift = 0; shift < d_global; shift += 1) {
+          const shiftedKey = block
+            .map(node => rotateNode(node, shift))
+            .sort((a, b) => a - b)
+            .join(",");
+          orbitKeys.add(shiftedKey);
+          visited.add(shiftedKey);
+        }
+
+        if (orbitKeys.size < d_global) zeroBlocks += 1;
+        else nonzeroOrbits += 1;
+      }
+
+      return { nonzeroOrbits, zeroBlocks };
+    }
+
+    function gddStateRank(dsu, centerAttached) {
+      const { nonzeroOrbits } = gddOuterBlockOrbitStats(dsu);
+      const nonzeroLabelledOrbits = nonzeroOrbits + (centerAttached ? 0 : 1);
+      return rank_global - nonzeroLabelledOrbits;
+    }
+
+    function gddDiskStateKey(dsu, centerAttached, centralAnchor) {
+      return canonicalBlockKey(gddDiskBlocksFromState(dsu, centerAttached, centralAnchor));
+    }
+
+    function gddCoverDescriptors(dsu, centerAttached) {
+      const descriptors = [];
+      const edgeOrbitKeys = new Set();
+
+      for (let left = 0; left < N_global; left += 1) {
+        for (let right = left + 1; right < N_global; right += 1) {
+          if (dsu.find(left) === dsu.find(right)) continue;
+          const edge = [left, right];
+          const key = edgeOrbitKey(edge);
+          if (edgeOrbitKeys.has(key)) continue;
+          edgeOrbitKeys.add(key);
+          descriptors.push({ type: "edge", edge });
+        }
+      }
+
+      if (!centerAttached) {
+        for (const block of dsu.blocks(baseRank)) {
+          descriptors.push({ type: "center", anchor: block[0] });
+        }
+      }
+
+      return shuffleArray(descriptors);
+    }
+
+    function gddCoverMoveFromDescriptor(dsu, centerAttached, centralAnchor, currentRank, descriptor) {
+      const nextDsu = dsu.clone();
+      let nextCenterAttached = centerAttached;
+      let nextCentralAnchor = centralAnchor;
+      let operation;
+
+      if (descriptor.type === "edge") {
+        if (!addSymmetricEdge(nextDsu, descriptor.edge)) return null;
+        operation = { type: "edge", edge: descriptor.edge.slice() };
+      } else {
+        if (centerAttached) return null;
+        nextCenterAttached = true;
+        nextCentralAnchor = descriptor.anchor;
+        operation = { type: "center", anchor: descriptor.anchor };
+      }
+
+      if (gddStateRank(nextDsu, nextCenterAttached) !== currentRank + 1) return null;
+      if (!areGddDiskBlocksNoncrossing(nextDsu, nextCenterAttached, nextCentralAnchor)) return null;
+
+      const labelledBlocks = buildGddLabeledBlocksFromState(
+        nextDsu,
+        nextCenterAttached,
+        nextCentralAnchor
+      );
+      const permutation = gddBlocksToPermutation(labelledBlocks, rank_global);
+      if (!isGddGroupPermutation(permutation, rank_global)) return null;
+
+      return {
+        dsu: nextDsu,
+        centerAttached: nextCenterAttached,
+        centralAnchor: nextCentralAnchor,
+        operation,
+        stateKey: gddDiskStateKey(nextDsu, nextCenterAttached, nextCentralAnchor)
+      };
+    }
+
+    function chooseRandomGddCoverMove(dsu, centerAttached, centralAnchor) {
+      const currentRank = gddStateRank(dsu, centerAttached);
+      const descriptors = gddCoverDescriptors(dsu, centerAttached);
+      const validMoves = [];
+      const stateKeys = new Set();
+      const exactEnumeration = N_global <= 48;
+      const poolLimit = exactEnumeration ? Infinity : 96;
+
+      for (const descriptor of descriptors) {
+        const move = gddCoverMoveFromDescriptor(
+          dsu,
+          centerAttached,
+          centralAnchor,
+          currentRank,
+          descriptor
+        );
+        if (!move || stateKeys.has(move.stateKey)) continue;
+        stateKeys.add(move.stateKey);
+        validMoves.push(move);
+        if (validMoves.length >= poolLimit) break;
+      }
+
+      if (!validMoves.length) {
+        throw new Error(`The G(d,d,n) sampler found no rank-${currentRank + 1} cover above the current partition.`);
+      }
+      return validMoves[Math.floor(Math.random() * validMoves.length)];
+    }
+
+    function buildRandomGddMaximalChain() {
+      let dsu = new DisjointSet(N_global);
+      let centerAttached = false;
+      let centralAnchor = null;
+      let currentRank = gddStateRank(dsu, centerAttached);
+      const operations = [];
+
+      while (currentRank < rank_global) {
+        const move = chooseRandomGddCoverMove(dsu, centerAttached, centralAnchor);
+        dsu = move.dsu;
+        centerAttached = move.centerAttached;
+        centralAnchor = move.centralAnchor;
+        operations.push(move.operation);
+        const nextRank = gddStateRank(dsu, centerAttached);
+        if (nextRank !== currentRank + 1) {
+          throw new Error("The G(d,d,n) maximal-chain sampler made a non-cover move.");
+        }
+        currentRank = nextRank;
+      }
+
+      if (operations.length !== rank_global) {
+        throw new Error("The G(d,d,n) maximal chain did not have the expected rank.");
+      }
+      return { operations, dsu, centerAttached, centralAnchor };
+    }
+
+    function sampleWeaklyIncreasingRanks(maxRank, count) {
+      const positions = shuffleArray(
+        Array.from({ length: maxRank + count }, (_, index) => index + 1)
+      ).slice(0, count).sort((a, b) => a - b);
+      return positions.map((position, index) => position - index - 1);
+    }
+
+    function generateGddMultichain() {
+      const maximalChain = buildRandomGddMaximalChain();
+      const sampledRanks = sampleWeaklyIncreasingRanks(rank_global, k_global);
+
+      multichainEdges = Array.from({ length: k_global }, () => []);
+      gddCentralAnchor = null;
+      gddCentralAttachStep = null;
+      gddGeneratedRanks = sampledRanks.slice();
+
+      for (let operationIndex = 0; operationIndex < maximalChain.operations.length; operationIndex += 1) {
+        const operationRank = operationIndex + 1;
+        const firstVisibleStep = sampledRanks.findIndex(rank => rank >= operationRank);
+        if (firstVisibleStep < 0) break;
+
+        const operation = maximalChain.operations[operationIndex];
+        if (operation.type === "edge") {
+          multichainEdges[firstVisibleStep].push(operation.edge.slice());
+        } else {
+          gddCentralAnchor = operation.anchor;
+          gddCentralAttachStep = firstVisibleStep;
+        }
+      }
+
+      for (let step = 0; step < k_global; step += 1) {
+        const actualRank = gddStateRank(partitionAt(step), gddCenterAttachedAt(step));
+        if (actualRank !== sampledRanks[step]) {
+          throw new Error(`Generated π${step + 1} at rank ${actualRank}, expected rank ${sampledRanks[step]}.`);
+        }
+      }
+
+      const firstBlocks = buildGddLabeledBlocks(0);
+      gddBaseCase = classifyGddBlocks(firstBlocks, rank_global, n_global).caseName;
+      return {
+        caseName: gddBaseCase,
+        rankSequence: sampledRanks,
+        distinctLevels: new Set(sampledRanks).size
+      };
+    }
+
+    function finalMultichainPermutation() {
+      if (!multichainEdges.length) return null;
+      const finalBlocks = partitionAt(k_global - 1).blocks(baseRank);
+      return blocksToPermutation(finalBlocks, baseRank);
+    }
+
+    function multichainHasFullSupport() {
+      if (!multichainEdges.length) return false;
+
+      // For d = 1 (type A), full support means that no standard cut
+      // {1,...,r}|{r+1,...,n} separates every block.
+      if (d_global === 1) {
+        if (n_global <= 1) return true;
+        const blocks = partitionAt(k_global - 1).blocks(baseRank);
+        for (let cut = 1; cut < n_global; cut += 1) {
+          const crossesCut = blocks.some(block => {
+            let left = false;
+            let right = false;
+            for (const node of block) {
+              const value = node % n_global;
+              if (value < cut) left = true;
+              else right = true;
+            }
+            return left && right;
+          });
+          if (!crossesCut) return false;
+        }
+        return true;
+      }
+
+      // Proposition 4.1 in main.tex: pi_k is full support iff the cycle of n^2
+      // in pi_k^{-1}c contains no element whose color is different from 2.
+      const finalPermutation = finalMultichainPermutation();
+      if (!finalPermutation) return false;
+      const finalDelta = composePermutations(
+        inversePermutation(finalPermutation),
+        getCoxeterElement()
+      );
+      const nColorTwo = n_global + (n_global - 1);
+      return cycleContaining(finalDelta, nColorTwo).every(node =>
+        Math.floor(node / n_global) + 1 === 2
+      );
+    }
+
+    function generateDeterministicPositiveMultichain() {
+      multichainEdges = Array.from({ length: k_global }, () => []);
+
+      if (d_global === 1) {
+        if (n_global > 1) {
+          // The boundary chord 1--n crosses every standard type-A cut.
+          multichainEdges[k_global - 1].push([0, n_global - 1]);
+        }
+        return;
+      }
+
+      // Build the Coxeter/top partition by using boundary edges only. Every
+      // intermediate level is noncrossing, and the final level has full support.
+      const withinSectorEdges = shuffleArray(
+        Array.from({ length: Math.max(0, n_global - 1) }, (_, value) => [value, value + 1])
+      );
+      withinSectorEdges.forEach((edge, index) => {
+        const step = withinSectorEdges.length
+          ? Math.min(k_global - 1, Math.floor(index * k_global / withinSectorEdges.length))
+          : k_global - 1;
+        multichainEdges[step].push(edge);
+      });
+
+      // In the display order 1,d,d-1,...,2, n^1--1^d and all of its color
+      // translates are boundary edges joining the color sectors.
+      multichainEdges[k_global - 1].push([n_global - 1, (d_global - 1) * n_global]);
+    }
+
+    function generateMultichainForMode() {
+      if (!positiveModeEnabled()) {
+        generateRandomMultichain();
+        return { positive: multichainHasFullSupport(), attempts: 1, fallback: false };
+      }
+
+      const maxAttempts = 96;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        generateRandomMultichain();
+        if (multichainHasFullSupport()) {
+          return { positive: true, attempts: attempt, fallback: false };
+        }
+      }
+
+      generateDeterministicPositiveMultichain();
+      if (!multichainHasFullSupport()) {
+        throw new Error("Unable to construct a positive multichain for these parameters.");
+      }
+      return { positive: true, attempts: maxAttempts, fallback: true };
+    }
+
+    function blocksToPermutation(blocks, rank, size = N_global) {
+      const permutation = Array.from({ length: size }, (_, i) => i);
       for (const block of blocks) {
         const cycle = block.slice().sort((a, b) => rank[a] - rank[b]);
         for (let i = 0; i < cycle.length; i += 1) {
@@ -846,6 +1402,14 @@
       return d_global * Math.max(0, theorem48PerColor() - 1);
     }
 
+    function zkhOrder() {
+      return transformData ? transformData.M : k_global * d_global * n_global;
+    }
+
+    function activeActionOrder() {
+      return positiveModeEnabled() ? theorem48Order() : zkhOrder();
+    }
+
     function theorem48ShiftColor(color, shift) {
       return mod(color - 1 + shift, d_global) + 1;
     }
@@ -854,7 +1418,7 @@
       const perColor = theorem48PerColor();
       const sector = superscriptOrder.indexOf(color);
       if (!Number.isInteger(value) || value < 1 || value > perColor || sector < 0) {
-        throw new Error(`Invalid Theorem 4.8 node ${value}^${color}.`);
+        throw new Error(`Invalid positive-action node ${value}^${color}.`);
       }
       return sector * perColor + value - 1;
     }
@@ -916,10 +1480,10 @@
 
     function analyzeTheorem48Case(permutation) {
       if (k_global < 2) {
-        return { applicable: false, reason: "Theorem 4.8 assumes k ≥ 2." };
+        return { applicable: false, reason: "The positive cyclic action requires k ≥ 2." };
       }
       if (d_global < 2) {
-        return { applicable: false, reason: "Theorem 4.8 uses colors 1 and 2, so this button requires d ≥ 2." };
+        return { applicable: false, reason: "The positive cyclic action uses colors 1 and 2, so this button requires d ≥ 2." };
       }
       if (!isPermutation(permutation) || permutation.length !== d_global * theorem48PerColor()) {
         return { applicable: false, reason: "The final blocks do not define the required permutation on [kn]^d." };
@@ -944,11 +1508,11 @@
         };
       }
 
-      // In the positive model of Theorem 4.8, (kn)^2 is followed by 1^1.
+      // In the positive three-case model, (kn)^2 is followed by 1^1.
       if (!specialBlock.includes(oneColorOne) || permutation[special] !== oneColorOne) {
         return {
           applicable: false,
-          reason: "This final partition is outside the positive/full-support domain of Theorem 4.8: (kn)^2 is not followed by 1^1."
+          reason: "This final partition is outside the positive/full-support domain of the cyclic action: (kn)^2 is not followed by 1^1."
         };
       }
 
@@ -958,7 +1522,7 @@
       if (predecessorData.color !== 1 || predecessorData.value >= perColor) {
         return {
           applicable: false,
-          reason: "The Theorem 4.8 predecessor a₁¹ of (kn)^2 could not be identified."
+          reason: "The positive-action predecessor a₁¹ of (kn)^2 could not be identified."
         };
       }
 
@@ -997,7 +1561,7 @@
         if (chosen.a2 >= perColor || chosen.a3 >= perColor || afterA2Data.value >= perColor) {
           return {
             applicable: false,
-            reason: "The exceptional Case 1 parameters do not lie in the range required by Theorem 4.8."
+            reason: "The exceptional Case 1 parameters do not lie in the range required by the positive cyclic action."
           };
         }
         return {
@@ -1054,7 +1618,7 @@
       }
 
       if (!isPermutation(result)) {
-        throw new Error(`Theorem 4.8 Case ${analysis.caseNumber} did not produce a permutation.`);
+        throw new Error(`Positive cyclic action Case ${analysis.caseNumber} did not produce a permutation.`);
       }
 
       const blocks = permutationCycles(result)
@@ -1066,7 +1630,7 @@
         colorSymmetric: isColorSymmetricPartition(blocks)
       };
       if (!checks.noncrossing || !checks.kDivisible || !checks.colorSymmetric) {
-        throw new Error(`Theorem 4.8 Case ${analysis.caseNumber} failed a partition invariant.`);
+        throw new Error(`Positive cyclic action Case ${analysis.caseNumber} failed a partition invariant.`);
       }
 
       const nextAnalysis = analyzeTheorem48Case(result);
@@ -1085,6 +1649,35 @@
       };
     }
 
+    function applyZkhCase0(permutation) {
+      if (!isPermutation(permutation)) {
+        throw new Error("The final blocks do not define a permutation for the Z_kh action.");
+      }
+
+      const result = rotatePermutationClockwiseOne(permutation);
+      const blocks = permutationCycles(result)
+        .map(block => block.slice().sort((a, b) => a - b))
+        .sort((a, b) => a[0] - b[0]);
+      const checks = {
+        noncrossing: isNoncrossingBlocks(blocks),
+        kDivisible: blocks.every(block => block.length % k_global === 0),
+        colorSymmetric: isColorSymmetricPartition(blocks)
+      };
+      if (!checks.noncrossing || !checks.kDivisible || !checks.colorSymmetric) {
+        throw new Error("The Z_kh Case 0 rotation failed a partition invariant.");
+      }
+
+      return {
+        permutation: result,
+        blocks,
+        caseNumber: 0,
+        parameters: null,
+        summary: "Z_kh Case 0: rotate every block one boundary unit clockwise.",
+        nextCaseNumber: 0,
+        checks
+      };
+    }
+
     function clearKActionState() {
       kActionPermutation = null;
       kActionBlocks = null;
@@ -1096,14 +1689,7 @@
     }
 
     function currentMultichainHasFullSupport() {
-      if (!transformData || d_global < 2 || !transformData.deltaPermutations.length) return false;
-      // Proposition 4.1: π_k is full support iff the cycle of n^2 in π_k^{-1}c
-      // contains no element of a color other than 2.  The final delta factor is π_k^{-1}c.
-      const finalDelta = transformData.deltaPermutations[k_global - 1];
-      const nColorTwo = n_global + (n_global - 1);
-      return cycleContaining(finalDelta, nColorTwo).every(node =>
-        Math.floor(node / n_global) + 1 === 2
-      );
+      return multichainHasFullSupport();
     }
 
     function resetKActionState() {
@@ -1113,7 +1699,12 @@
       kActionBlocks = transformData.krewerasBlocks.map(block => block.slice());
       kActionInitialPermutation = kActionPermutation.slice();
 
-      // Check the explicit hypotheses of Theorem 4.8 before the full-support test,
+      if (!positiveModeEnabled()) {
+        kActionNextCase = 0;
+        return;
+      }
+
+      // Check the explicit hypotheses of the positive action before the full-support test,
       // so the disabled-button explanation identifies the actual missing hypothesis.
       if (k_global < 2 || d_global < 2) {
         const domainAnalysis = analyzeTheorem48Case(kActionPermutation);
@@ -1122,7 +1713,7 @@
       }
 
       if (!currentMultichainHasFullSupport()) {
-        kActionIssue = "Theorem 4.8 applies only when πₖ has full support; this generated multichain does not satisfy that hypothesis.";
+        kActionIssue = "The positive cyclic action applies only when πₖ has full support; this multichain does not satisfy that hypothesis.";
         return;
       }
 
@@ -1215,6 +1806,1465 @@
         checks
       };
     }
+
+
+    function gddFullNodeId(value, color, rank = rank_global) {
+      return (color - 1) * rank + (value - 1);
+    }
+
+    function gddFullNodeData(node, rank = rank_global) {
+      return {
+        value: mod(node, rank) + 1,
+        color: Math.floor(node / rank) + 1
+      };
+    }
+
+    function gddShiftFullNode(node, shift, rank = rank_global) {
+      const data = gddFullNodeData(node, rank);
+      return gddFullNodeId(data.value, mod(data.color - 1 + shift, d_global) + 1, rank);
+    }
+
+    function gddOuterNodeToFull(node) {
+      const value = mod(node, n_global) + 1;
+      const color = Math.floor(node / n_global) + 1;
+      return gddFullNodeId(value, color, rank_global);
+    }
+
+    function buildGddLabeledBlocksFromState(dsu, centerAttached, centralAnchor) {
+      const outerBlocks = dsu.blocks(baseRank);
+      const blocks = outerBlocks.map(block => block.map(gddOuterNodeToFull));
+      const rootToIndex = new Map();
+      outerBlocks.forEach((block, index) => {
+        if (block.length) rootToIndex.set(dsu.find(block[0]), index);
+      });
+
+      if (!centerAttached || centralAnchor == null) {
+        for (let color = 1; color <= d_global; color += 1) {
+          blocks.push([gddFullNodeId(rank_global, color)]);
+        }
+      } else {
+        for (let shift = 0; shift < d_global; shift += 1) {
+          const shiftedAnchor = rotateNode(centralAnchor, shift);
+          const index = rootToIndex.get(dsu.find(shiftedAnchor));
+          const color = mod(shift, d_global) + 1;
+          if (index == null) throw new Error("Unable to attach the G(d,d,n) central label orbit.");
+          blocks[index].push(gddFullNodeId(rank_global, color));
+        }
+      }
+
+      blocks.forEach(block => block.sort((a, b) => a - b));
+      blocks.sort((a, b) => a[0] - b[0]);
+      return blocks;
+    }
+
+    function buildGddLabeledBlocksFromDsu(dsu, step = k_global - 1) {
+      return buildGddLabeledBlocksFromState(
+        dsu,
+        gddCenterAttachedAt(step),
+        gddCentralAnchor
+      );
+    }
+
+    function buildGddLabeledBlocks(step) {
+      return buildGddLabeledBlocksFromDsu(partitionAt(step), step);
+    }
+
+    function gddCycleOrder(rank) {
+      const order = [];
+      for (const color of superscriptOrder) {
+        for (let value = 1; value < rank; value += 1) {
+          order.push(gddFullNodeId(value, color, rank));
+        }
+        order.push(gddFullNodeId(rank, color, rank));
+      }
+      return order;
+    }
+
+    function gddBlocksToPermutation(blocks, rank) {
+      const size = d_global * rank;
+      const permutation = Array.from({ length: size }, (_, index) => index);
+      const cycleOrder = gddCycleOrder(rank);
+      const cycleRank = buildRank(cycleOrder, size);
+      const centralNodes = new Set(
+        Array.from({ length: d_global }, (_, index) => gddFullNodeId(rank, index + 1, rank))
+      );
+
+      // A rotation-invariant zero block does not correspond to one ordinary
+      // cycle.  Under Omega it contributes two oppositely oriented balanced
+      // cycles: one on its outer value-orbits and one on the central n-orbit.
+      // Their color shifts cancel, placing the result in G(d,d,n).
+      let zeroBlock = null;
+      for (const block of blocks) {
+        const centralCount = block.reduce((count, node) => count + (centralNodes.has(node) ? 1 : 0), 0);
+        if (centralCount === d_global) {
+          zeroBlock = block;
+          break;
+        }
+      }
+
+      const writeCycle = cycle => {
+        if (!cycle || cycle.length < 2) return;
+        for (let index = 0; index < cycle.length; index += 1) {
+          permutation[cycle[index]] = cycle[(index + 1) % cycle.length];
+        }
+      };
+
+      const outerOrderData = buildBaseOrder(rank - 1, d_global);
+      const outerCycleRank = buildRank(outerOrderData.order, d_global * (rank - 1));
+
+      for (const block of blocks) {
+        if (block === zeroBlock) continue;
+        const central = block.filter(node => centralNodes.has(node));
+        const outer = block.filter(node => !centralNodes.has(node));
+        let cycle;
+
+        if (central.length === 1 && outer.length) {
+          // The center is a genuine vertex of the convex hull in the
+          // Bessis--Corran disk model.  Insert n^j across the unique largest
+          // circular gap of the outer vertices, then follow the occupied arc
+          // clockwise.  Sorting n^j as though it were an ordinary boundary
+          // point gives the wrong Omega element for general annular blocks.
+          const samples = outer.map(node => {
+            const data = gddFullNodeData(node, rank);
+            const outerNode = (data.color - 1) * (rank - 1) + (data.value - 1);
+            return { node, circularRank: outerCycleRank[outerNode] };
+          }).sort((left, right) => left.circularRank - right.circularRank);
+
+          let cutAfter = 0;
+          let largestGap = -1;
+          for (let index = 0; index < samples.length; index += 1) {
+            const nextRank = index + 1 < samples.length
+              ? samples[index + 1].circularRank
+              : samples[0].circularRank + d_global * (rank - 1);
+            const gap = nextRank - samples[index].circularRank;
+            if (gap > largestGap) {
+              largestGap = gap;
+              cutAfter = index;
+            }
+          }
+
+          const clockwiseOuter = Array.from(
+            { length: samples.length },
+            (_, offset) => samples[(cutAfter + 1 + offset) % samples.length].node
+          );
+          cycle = [central[0], ...clockwiseOuter];
+        } else {
+          cycle = block.slice().sort((left, right) => cycleRank[left] - cycleRank[right]);
+        }
+        writeCycle(cycle);
+      }
+
+      if (zeroBlock) {
+        const outerValues = Array.from(new Set(
+          zeroBlock
+            .map(node => gddFullNodeData(node, rank))
+            .filter(data => data.value < rank)
+            .map(data => data.value)
+        )).sort((left, right) => left - right);
+
+        const outerBalanced = [];
+        for (const color of superscriptOrder) {
+          for (const value of outerValues) outerBalanced.push(gddFullNodeId(value, color, rank));
+        }
+        const innerBalanced = Array.from(
+          { length: d_global },
+          (_, index) => gddFullNodeId(rank, index + 1, rank)
+        );
+        writeCycle(outerBalanced);
+        writeCycle(innerBalanced);
+      }
+
+      return permutation;
+    }
+
+    function buildGddCoxeterPermutation() {
+      const size = d_global * rank_global;
+      const permutation = Array.from({ length: size }, (_, index) => index);
+      const outerOrder = [];
+      for (const color of superscriptOrder) {
+        for (let value = 1; value < rank_global; value += 1) {
+          outerOrder.push(gddFullNodeId(value, color));
+        }
+      }
+      outerOrder.forEach((node, index) => {
+        permutation[node] = outerOrder[(index + 1) % outerOrder.length];
+      });
+
+      const innerCounterclockwise = Array.from(
+        { length: d_global },
+        (_, index) => gddFullNodeId(rank_global, index + 1)
+      );
+      innerCounterclockwise.forEach((node, index) => {
+        permutation[node] = innerCounterclockwise[(index + 1) % innerCounterclockwise.length];
+      });
+      return permutation;
+    }
+
+    function isGddGroupPermutation(permutation, rank) {
+      if (!isPermutation(permutation) || permutation.length !== d_global * rank) return false;
+      for (let node = 0; node < permutation.length; node += 1) {
+        const shifted = gddShiftFullNode(node, 1, rank);
+        if (permutation[shifted] !== gddShiftFullNode(permutation[node], 1, rank)) return false;
+      }
+      let totalShift = 0;
+      for (let value = 1; value <= rank; value += 1) {
+        const image = gddFullNodeData(permutation[gddFullNodeId(value, 1, rank)], rank);
+        totalShift += image.color - 1;
+      }
+      return mod(totalShift, d_global) === 0;
+    }
+
+    function embedGddPermutation(permutation, layer) {
+      const targetRank = k_global * rank_global;
+      const embedded = Array.from({ length: d_global * targetRank }, (_, index) => index);
+      for (let node = 0; node < permutation.length; node += 1) {
+        const source = gddFullNodeData(node, rank_global);
+        const target = gddFullNodeData(permutation[node], rank_global);
+        const sourceValue = (source.value - 1) * k_global + layer;
+        const targetValue = (target.value - 1) * k_global + layer;
+        embedded[gddFullNodeId(sourceValue, source.color, targetRank)] =
+          gddFullNodeId(targetValue, target.color, targetRank);
+      }
+      return embedded;
+    }
+
+    function buildGddBoundaryOrders(rank, outerValueCount) {
+      const outerOrder = [];
+      for (const color of superscriptOrder) {
+        for (let value = 1; value <= outerValueCount; value += 1) {
+          outerOrder.push(gddFullNodeId(value, color, rank));
+        }
+      }
+      const innerCounterclockwise = [];
+      for (let color = 1; color <= d_global; color += 1) {
+        for (let value = outerValueCount + 1; value <= rank; value += 1) {
+          innerCounterclockwise.push(gddFullNodeId(value, color, rank));
+        }
+      }
+      return { outerOrder, innerCounterclockwise };
+    }
+
+    function buildGddBoundaryRotation(rank, outerValueCount) {
+      const size = d_global * rank;
+      const rotation = Array.from({ length: size }, (_, index) => index);
+      const orders = buildGddBoundaryOrders(rank, outerValueCount);
+      orders.outerOrder.forEach((node, index) => {
+        rotation[node] = orders.outerOrder[(index + 1) % orders.outerOrder.length];
+      });
+      orders.innerCounterclockwise.forEach((node, index) => {
+        rotation[node] = orders.innerCounterclockwise[(index + 1) % orders.innerCounterclockwise.length];
+      });
+      return { rotation, ...orders };
+    }
+
+    function classifyGddBlocks(blocks, rank, outerValueCount) {
+      let zeroBlocks = 0;
+      let innerBlocks = 0;
+      let outerBlocks = 0;
+      let annularBlocks = 0;
+      const allInnerCount = d_global * (rank - outerValueCount);
+
+      for (const block of blocks) {
+        let innerCount = 0;
+        let outerCount = 0;
+        for (const node of block) {
+          if (gddFullNodeData(node, rank).value > outerValueCount) innerCount += 1;
+          else outerCount += 1;
+        }
+        if (innerCount && outerCount) {
+          if (innerCount === allInnerCount) zeroBlocks += 1;
+          else annularBlocks += 1;
+        } else if (innerCount) innerBlocks += 1;
+        else outerBlocks += 1;
+      }
+
+      const caseName = zeroBlocks
+        ? "zero"
+        : (innerBlocks ? "inner" : (annularBlocks ? "annular" : "outer"));
+      return { caseName, zeroBlocks, innerBlocks, outerBlocks, annularBlocks };
+    }
+
+    function canonicalBlockKey(blocks) {
+      return blocks
+        .map(block => block.slice().sort((a, b) => a - b).join(","))
+        .sort()
+        .join("|");
+    }
+
+    function isGddColorSymmetric(blocks, rank) {
+      const keys = new Set(blocks.map(block => block.slice().sort((a, b) => a - b).join(",")));
+      return blocks.every(block => {
+        const shifted = block.map(node => gddShiftFullNode(node, 1, rank)).sort((a, b) => a - b);
+        return keys.has(shifted.join(","));
+      });
+    }
+
+    function gddResidueCondition(permutation, rank) {
+      for (const cycle of permutationCycles(permutation)) {
+        if (cycle.length < 2) continue;
+        for (let index = 0; index < cycle.length; index += 1) {
+          const current = gddFullNodeData(cycle[index], rank).value;
+          const next = gddFullNodeData(cycle[(index + 1) % cycle.length], rank).value;
+          if (mod(next - current, k_global) !== mod(1, k_global)) return false;
+        }
+      }
+      return true;
+    }
+
+    function buildGddInnerCaseTransform(targetRank, outerValueCount) {
+      // When π₁ has d inner singleton blocks, the annular construction separates into:
+      //   (i) the ordinary G(d,1,n-1) shuffle/Kreweras construction on the
+      //       outer restriction of the chain, and
+      //   (ii) d packets of k consecutive inner vertices.  Constructing this
+      // directly avoids treating the central singleton orbit as an annular
+      // cycle in the monomial-permutation encoding.
+      const outerChainPermutations = [];
+      for (let step = 0; step < k_global; step += 1) {
+        outerChainPermutations.push(
+          blocksToPermutation(partitionAt(step).blocks(baseRank), baseRank, N_global)
+        );
+      }
+
+      const outerDeltas = [];
+      for (let step = 0; step < k_global - 1; step += 1) {
+        outerDeltas.push(
+          composePermutations(
+            inversePermutation(outerChainPermutations[step]),
+            outerChainPermutations[step + 1]
+          )
+        );
+      }
+      outerDeltas.push(
+        composePermutations(
+          inversePermutation(outerChainPermutations[k_global - 1]),
+          getCoxeterElement()
+        )
+      );
+
+      const outerTargetSize = k_global * N_global;
+      const shuffledOuterPermutation = new Array(outerTargetSize);
+      for (let basePosition = 0; basePosition < N_global; basePosition += 1) {
+        const sourceNode = baseOrder[basePosition];
+        for (let layer = 0; layer < k_global; layer += 1) {
+          const targetNode = outerDeltas[layer][sourceNode];
+          const targetPosition = baseRank[targetNode];
+          shuffledOuterPermutation[basePosition * k_global + layer] =
+            targetPosition * k_global + layer;
+        }
+      }
+
+      const shuffledInverse = inversePermutation(shuffledOuterPermutation);
+      const outerKrewerasPermutation = shuffledInverse.map(value =>
+        mod(value + 1, outerTargetSize)
+      );
+      const positionBlocks = permutationCycles(outerKrewerasPermutation);
+      const boundary = buildGddBoundaryOrders(targetRank, outerValueCount);
+      const outerBlocks = positionBlocks.map(block =>
+        block.map(position => boundary.outerOrder[position])
+      );
+
+      // Determine the residue of the visible outer blocks.  For a source-inner
+      // partition, Definition 7.1 places the d inner blocks immediately before
+      // that common residue on the counterclockwise inner boundary.
+      const outerPosition = new Map(
+        boundary.outerOrder.map((node, index) => [node, index])
+      );
+      const unitPositions = new Array(d_global * targetRank);
+      boundary.outerOrder.forEach((node, index) => {
+        const angle = -Math.PI / 2 + (index * TAU) / boundary.outerOrder.length;
+        unitPositions[node] = { x: Math.cos(angle), y: Math.sin(angle) };
+      });
+      const center = { x: 0, y: 0 };
+      const outerHulls = new Map(
+        outerBlocks.map(block => [block, convexHull(block.map(node => unitPositions[node]))])
+      );
+
+      const visibleBlocks = outerBlocks.filter(block => {
+        const joinedHull = convexHull([
+          ...block.map(node => unitPositions[node]),
+          center
+        ]);
+        for (const other of outerBlocks) {
+          if (other === block) continue;
+          if (hullsIntersect(joinedHull, outerHulls.get(other))) return false;
+        }
+        return true;
+      });
+
+      if (!visibleBlocks.length) {
+        throw new Error("Unable to locate a center-visible outer block in the inner case.");
+      }
+
+      const visibleResidues = visibleBlocks.map(block => {
+        const ranks = block.map(node => outerPosition.get(node)).sort((a, b) => a - b);
+        let cutAfter = 0;
+        let largestGap = -1;
+        for (let index = 0; index < ranks.length; index += 1) {
+          const nextRank = index + 1 < ranks.length
+            ? ranks[index + 1]
+            : ranks[0] + boundary.outerOrder.length;
+          const gap = nextRank - ranks[index];
+          if (gap > largestGap) {
+            largestGap = gap;
+            cutAfter = index;
+          }
+        }
+        const lastNode = boundary.outerOrder[ranks[cutAfter]];
+        return mod(gddFullNodeData(lastNode, targetRank).value, k_global);
+      });
+
+      const visibleResidue = visibleResidues[0];
+      if (visibleResidues.some(residue => residue !== visibleResidue)) {
+        throw new Error("The center-visible outer blocks do not have a common residue modulo k.");
+      }
+
+      const innerPosition = new Map(
+        boundary.innerCounterclockwise.map((node, index) => [node, index])
+      );
+      const endpointWithinPacket = visibleResidue === 0 ? k_global : visibleResidue;
+      const innerBlocks = [];
+      for (let color = 1; color <= d_global; color += 1) {
+        const endpoint = gddFullNodeId(
+          outerValueCount + endpointWithinPacket,
+          color,
+          targetRank
+        );
+        const endpointIndex = innerPosition.get(endpoint);
+        innerBlocks.push(
+          Array.from({ length: k_global }, (_, offset) =>
+            boundary.innerCounterclockwise[
+              mod(endpointIndex - k_global + 1 + offset, boundary.innerCounterclockwise.length)
+            ]
+          )
+        );
+      }
+
+      const annularBlocks = [...outerBlocks, ...innerBlocks];
+      const correctedPermutation = Array.from(
+        { length: d_global * targetRank },
+        (_, index) => index
+      );
+
+      // Preserve the actual cycle order of the outer Kreweras permutation.
+      for (let position = 0; position < outerTargetSize; position += 1) {
+        correctedPermutation[boundary.outerOrder[position]] =
+          boundary.outerOrder[outerKrewerasPermutation[position]];
+      }
+      for (const block of innerBlocks) {
+        for (let index = 0; index < block.length; index += 1) {
+          correctedPermutation[block[index]] = block[(index + 1) % block.length];
+        }
+      }
+
+      return {
+        permutation: correctedPermutation,
+        blocks: annularBlocks,
+        visibleResidue,
+        visibleBlockCount: visibleBlocks.length
+      };
+    }
+
+    function buildGddTransformData() {
+      const cycleOrder = gddCycleOrder(rank_global);
+      const cycleRank = buildRank(cycleOrder, d_global * rank_global);
+      const chainBlocks = [];
+      const chainPermutations = [];
+
+      for (let step = 0; step < k_global; step += 1) {
+        const blocks = buildGddLabeledBlocks(step);
+        const permutation = gddBlocksToPermutation(blocks, rank_global);
+        if (!isGddGroupPermutation(permutation, rank_global)) {
+          throw new Error(`π${step + 1} did not encode an element of G(d,d,n).`);
+        }
+        chainBlocks.push(blocks);
+        chainPermutations.push(permutation);
+      }
+
+      const coxeter = buildGddCoxeterPermutation();
+      if (!isGddGroupPermutation(coxeter, rank_global)) {
+        throw new Error("The G(d,d,n) Coxeter permutation failed its color-product check.");
+      }
+
+      const deltaPermutations = [];
+      for (let step = 0; step < k_global - 1; step += 1) {
+        deltaPermutations.push(
+          composePermutations(inversePermutation(chainPermutations[step]), chainPermutations[step + 1])
+        );
+      }
+      deltaPermutations.push(
+        composePermutations(inversePermutation(chainPermutations[k_global - 1]), coxeter)
+      );
+
+      const targetRank = k_global * rank_global;
+      const outerValueCount = k_global * (rank_global - 1);
+      const boundary = buildGddBoundaryRotation(targetRank, outerValueCount);
+      let tauPermutation = boundary.rotation.slice();
+      for (let layer = 1; layer <= k_global; layer += 1) {
+        const embeddedInverse = inversePermutation(embedGddPermutation(deltaPermutations[layer - 1], layer));
+        tauPermutation = composePermutations(tauPermutation, embeddedInverse);
+      }
+
+      if (!isPermutation(tauPermutation)) {
+        throw new Error("The τ formula did not produce a permutation.");
+      }
+      const sourceCase = classifyGddBlocks(chainBlocks[0], rank_global, rank_global - 1);
+      const rawTauCycles = permutationCycles(tauPermutation);
+      let annularBlocks = rawTauCycles.map(block => block.slice());
+
+      if (sourceCase.caseName === "inner") {
+        const innerTransform = buildGddInnerCaseTransform(targetRank, outerValueCount);
+        tauPermutation = innerTransform.permutation;
+        annularBlocks = innerTransform.blocks;
+      }
+
+      // In the Athanasiadis--Reiner/Bessis--Corran convention, a zero block
+      // is encoded by two balanced cycles: the complete inner cycle and one
+      // outer cycle.  The outer cycle need not have the minimal size dk; its
+      // size is determined by the zero block of π₁.  Merge the two cycles back
+      // into the single set-partition block used by the annular model.
+      if (sourceCase.caseName === "zero") {
+        const sourceZeroBlock = chainBlocks[0].find(block =>
+          block.filter(node => gddFullNodeData(node, rank_global).value === rank_global).length === d_global
+        );
+        if (!sourceZeroBlock) {
+          throw new Error("Unable to locate the zero block of π₁.");
+        }
+
+        const innerSize = d_global * k_global;
+        const expectedZeroSize = k_global * sourceZeroBlock.length;
+        const expectedOuterSize = expectedZeroSize - innerSize;
+        const innerIndex = annularBlocks.findIndex(block =>
+          block.length === innerSize &&
+          block.every(node => gddFullNodeData(node, targetRank).value > outerValueCount)
+        );
+        const outerIndex = annularBlocks.findIndex(block => {
+          if (block.length !== expectedOuterSize ||
+              !block.every(node => gddFullNodeData(node, targetRank).value <= outerValueCount)) {
+            return false;
+          }
+          // The outer half of the balanced zero-block encoding is the unique
+          // outer cycle fixed setwise by a one-color rotation. Other cycles of
+          // the same size can occur, so selecting only by cardinality can merge
+          // the wrong color-orbit representative.
+          const key = block.slice().sort((a, b) => a - b).join(",");
+          const shiftedKey = block
+            .map(node => gddShiftFullNode(node, 1, targetRank))
+            .sort((a, b) => a - b)
+            .join(",");
+          return key === shiftedKey;
+        });
+        if (innerIndex < 0 || outerIndex < 0 || innerIndex === outerIndex) {
+          throw new Error("Unable to recover the balanced inner and outer cycles of the annular zero block.");
+        }
+        const merged = [...annularBlocks[innerIndex], ...annularBlocks[outerIndex]];
+        annularBlocks = annularBlocks.filter((_, index) => index !== innerIndex && index !== outerIndex);
+        annularBlocks.push(merged);
+      }
+
+      const targetCase = classifyGddBlocks(annularBlocks, targetRank, outerValueCount);
+      const expectedSizes = chainBlocks[0].map(block => k_global * block.length).sort((a, b) => a - b);
+      const actualSizes = annularBlocks.map(block => block.length).sort((a, b) => a - b);
+      const caseCorrespondence =
+        (sourceCase.caseName === "zero" && targetCase.zeroBlocks === 1) ||
+        (sourceCase.caseName === "inner" && targetCase.innerBlocks > 0 && targetCase.annularBlocks === 0) ||
+        (sourceCase.caseName === "annular" && targetCase.annularBlocks > 0);
+
+      const checks = {
+        sourceGroupElements: chainPermutations.every(permutation => isGddGroupPermutation(permutation, rank_global)),
+        tauPermutation: isPermutation(tauPermutation),
+        kDivisible: annularBlocks.every(block => block.length % k_global === 0),
+        colorSymmetric: isGddColorSymmetric(annularBlocks, targetRank),
+        residueCondition: gddResidueCondition(tauPermutation, targetRank),
+        blockSizeScaling: arraysEqual(expectedSizes, actualSizes),
+        caseCorrespondence,
+        annularNoncrossing: isValidAnnularBlockSystem(annularBlocks, targetRank, outerValueCount) &&
+          areAnnularBlocksNoncrossing(annularBlocks, targetRank, outerValueCount)
+      };
+
+      if (Object.values(checks).some(value => !value)) {
+        const failed = Object.entries(checks).filter(([, value]) => !value).map(([key]) => key).join(", ");
+        throw new Error(`The annular τ model failed: ${failed}. Generate a new multichain or undo the last edit.`);
+      }
+
+      return {
+        mode: "gdd",
+        M: d_global * targetRank,
+        targetRank,
+        outerValueCount,
+        chainBlocks,
+        chainPermutations,
+        deltaPermutations,
+        tauPermutation,
+        annularBlocks,
+        sourceCase,
+        targetCase,
+        rotationPermutation: boundary.rotation,
+        outerOrder: boundary.outerOrder,
+        innerCounterclockwise: boundary.innerCounterclockwise,
+        checks
+      };
+    }
+
+    function annularPositions(rank, outerValueCount, cx, cy, outerRadius, innerRadius) {
+      const positions = new Array(d_global * rank);
+      const orders = buildGddBoundaryOrders(rank, outerValueCount);
+      // Align the midpoints of matching color sectors, not their first nodes.
+      // This is one fixed angular offset: both cyclic orders, all node labels,
+      // and the clockwise/counterclockwise action permutations stay unchanged.
+      const innerValues = rank - outerValueCount;
+      const innerPhase = Math.PI / d_global * (
+        (outerValueCount - 1) / outerValueCount + (innerValues - 1) / innerValues
+      );
+      orders.outerOrder.forEach((node, index) => {
+        const angle = -Math.PI / 2 + (index * TAU) / orders.outerOrder.length;
+        positions[node] = {
+          x: cx + outerRadius * Math.cos(angle),
+          y: cy + outerRadius * Math.sin(angle),
+          angle,
+          boundary: "outer"
+        };
+      });
+      orders.innerCounterclockwise.forEach((node, index) => {
+        const angle = -Math.PI / 2 + innerPhase - (index * TAU) / orders.innerCounterclockwise.length;
+        positions[node] = {
+          x: cx + innerRadius * Math.cos(angle),
+          y: cy + innerRadius * Math.sin(angle),
+          angle,
+          boundary: "inner"
+        };
+      });
+      return { positions, rank, outerValueCount, innerPhase, ...orders };
+    }
+
+    function pointCross(origin, left, right) {
+      return (left.x - origin.x) * (right.y - origin.y) -
+        (left.y - origin.y) * (right.x - origin.x);
+    }
+
+    function convexHull(points) {
+      if (points.length <= 1) return points.slice();
+      const sorted = points.slice().sort((a, b) => (a.x - b.x) || (a.y - b.y));
+      const lower = [];
+      for (const point of sorted) {
+        while (lower.length >= 2 && pointCross(lower[lower.length - 2], lower[lower.length - 1], point) <= 1e-8) {
+          lower.pop();
+        }
+        lower.push(point);
+      }
+      const upper = [];
+      for (let index = sorted.length - 1; index >= 0; index -= 1) {
+        const point = sorted[index];
+        while (upper.length >= 2 && pointCross(upper[upper.length - 2], upper[upper.length - 1], point) <= 1e-8) {
+          upper.pop();
+        }
+        upper.push(point);
+      }
+      lower.pop();
+      upper.pop();
+      return lower.concat(upper);
+    }
+
+    function pointOnSegment(point, left, right) {
+      const cross = Math.abs(pointCross(left, right, point));
+      if (cross > 1e-7) return false;
+      return point.x >= Math.min(left.x, right.x) - 1e-7 &&
+        point.x <= Math.max(left.x, right.x) + 1e-7 &&
+        point.y >= Math.min(left.y, right.y) - 1e-7 &&
+        point.y <= Math.max(left.y, right.y) + 1e-7;
+    }
+
+    function segmentsIntersect(leftA, leftB, rightA, rightB) {
+      const c1 = pointCross(leftA, leftB, rightA);
+      const c2 = pointCross(leftA, leftB, rightB);
+      const c3 = pointCross(rightA, rightB, leftA);
+      const c4 = pointCross(rightA, rightB, leftB);
+      if (((c1 > 1e-7 && c2 < -1e-7) || (c1 < -1e-7 && c2 > 1e-7)) &&
+          ((c3 > 1e-7 && c4 < -1e-7) || (c3 < -1e-7 && c4 > 1e-7))) return true;
+      return pointOnSegment(rightA, leftA, leftB) || pointOnSegment(rightB, leftA, leftB) ||
+        pointOnSegment(leftA, rightA, rightB) || pointOnSegment(leftB, rightA, rightB);
+    }
+
+    function pointInPolygon(point, polygon) {
+      if (polygon.length < 3) return false;
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+        const pi = polygon[i];
+        const pj = polygon[j];
+        if (pointOnSegment(point, pj, pi)) return true;
+        const intersects = ((pi.y > point.y) !== (pj.y > point.y)) &&
+          point.x < ((pj.x - pi.x) * (point.y - pi.y)) / ((pj.y - pi.y) || 1e-12) + pi.x;
+        if (intersects) inside = !inside;
+      }
+      return inside;
+    }
+
+    function hullEdges(hull) {
+      if (hull.length < 2) return [];
+      if (hull.length === 2) return [[hull[0], hull[1]]];
+      return hull.map((point, index) => [point, hull[(index + 1) % hull.length]]);
+    }
+
+    function hullsIntersect(left, right) {
+      if (left.length === 1 && right.length === 1) {
+        return Math.hypot(left[0].x - right[0].x, left[0].y - right[0].y) < 1e-7;
+      }
+      for (const [a, b] of hullEdges(left)) {
+        for (const [c, d] of hullEdges(right)) {
+          if (segmentsIntersect(a, b, c, d)) return true;
+        }
+      }
+      if (left.length >= 3 && right.some(point => pointInPolygon(point, left))) return true;
+      if (right.length >= 3 && left.some(point => pointInPolygon(point, right))) return true;
+      if (left.length === 1 && right.length === 2 && pointOnSegment(left[0], right[0], right[1])) return true;
+      if (right.length === 1 && left.length === 2 && pointOnSegment(right[0], left[0], left[1])) return true;
+      return false;
+    }
+
+    function areAnnularBlocksNoncrossing(blocks, rank, outerValueCount) {
+      try {
+        const geometry = annularPositions(rank, outerValueCount, 0, 0, 1, 0.4);
+        chooseAnnularDiskCut(blocks, geometry);
+        return true;
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    function isValidAnnularBlockSystem(blocks, rank, outerValueCount) {
+      const size = d_global * rank;
+      const seen = new Set();
+      for (const block of blocks) {
+        if (!block.length || block.length % k_global !== 0) return false;
+        for (const node of block) {
+          if (!Number.isInteger(node) || node < 0 || node >= size || seen.has(node)) return false;
+          seen.add(node);
+        }
+      }
+      if (seen.size !== size || !isGddColorSymmetric(blocks, rank)) return false;
+
+      const classification = classifyGddBlocks(blocks, rank, outerValueCount);
+      if (classification.zeroBlocks) {
+        if (classification.zeroBlocks !== 1 || classification.annularBlocks || classification.innerBlocks) return false;
+        const zero = blocks.find(block => classifyGddBlocks([block], rank, outerValueCount).zeroBlocks === 1);
+        const innerCount = zero.filter(node => gddFullNodeData(node, rank).value > outerValueCount).length;
+        const outerCount = zero.length - innerCount;
+        const completeInnerBoundary = d_global * (rank - outerValueCount);
+        return innerCount === completeInnerBoundary && outerCount > 0 && outerCount % k_global === 0;
+      }
+      if (classification.innerBlocks) {
+        return classification.annularBlocks === 0 && classification.zeroBlocks === 0;
+      }
+      return classification.annularBlocks > 0 && classification.innerBlocks === 0 && classification.zeroBlocks === 0;
+    }
+
+    function gddBlockStyle(block, rank, outerValueCount, alpha = 1, layer = null) {
+      const classification = classifyGddBlocks([block], rank, outerValueCount);
+      if (layer != null) {
+        return {
+          stroke: layerColor(layer, 0.96, 38),
+          fill: layerColor(layer, 0.12, 56),
+          lineWidth: 2.15,
+          alpha
+        };
+      }
+      if (classification.zeroBlocks) {
+        return { stroke: "rgba(52,64,84,0.98)", fill: "rgba(71,84,103,0.16)", lineWidth: 2.45, alpha };
+      }
+      if (classification.annularBlocks) {
+        return { stroke: "rgba(105,65,198,0.98)", fill: "rgba(127,86,217,0.14)", lineWidth: 2.35, alpha };
+      }
+      if (classification.innerBlocks) {
+        return { stroke: "rgba(184,128,16,0.98)", fill: "rgba(230,174,49,0.17)", lineWidth: 2.25, alpha };
+      }
+      return { stroke: "rgba(40,99,164,0.98)", fill: "rgba(55,111,177,0.12)", lineWidth: 2.2, alpha };
+    }
+
+    function drawHullFromNodes(context, block, positions, style) {
+      if (!block || block.length < 2) return;
+      const hull = convexHull(block.map(node => ({ ...positions[node], node })));
+      if (hull.length < 2) return;
+      context.save();
+      context.globalAlpha = style.alpha ?? 1;
+      context.strokeStyle = style.stroke;
+      context.fillStyle = style.fill || "transparent";
+      context.lineWidth = style.lineWidth || 2;
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(hull[0].x, hull[0].y);
+      for (let index = 1; index < hull.length; index += 1) context.lineTo(hull[index].x, hull[index].y);
+      if (hull.length > 2) {
+        context.closePath();
+        if (style.fill) context.fill();
+      }
+      context.stroke();
+      context.restore();
+    }
+
+
+    // The annular model is topological rather than an ordinary disk model.
+    // A Euclidean convex hull can therefore create artificial crossings after
+    // the two boundary circles rotate in opposite directions.  The helpers
+    // below draw annular blocks in the universal cover of the annulus and map
+    // the resulting disjoint ribbons back to polar coordinates.
+    function clockwiseAngle(position) {
+      return mod(position.angle + Math.PI / 2, TAU);
+    }
+
+    function circularArcDescriptor(nodes, positions, boundaryCount) {
+      const unique = Array.from(new Set(nodes));
+      if (!unique.length) return null;
+      const samples = unique
+        .map(node => ({ node, angle: clockwiseAngle(positions[node]) }))
+        .sort((left, right) => left.angle - right.angle);
+      const spacing = TAU / Math.max(1, boundaryCount);
+      const padding = Math.min(0.075, spacing * 0.23);
+      if (samples.length === 1) {
+        return {
+          nodes: unique,
+          orderedNodes: [samples[0].node],
+          start: samples[0].angle - padding,
+          end: samples[0].angle + padding,
+          center: samples[0].angle,
+          span: 2 * padding
+        };
+      }
+
+      let cutAfter = 0;
+      let largestGap = -1;
+      for (let index = 0; index < samples.length; index += 1) {
+        const next = index + 1 < samples.length
+          ? samples[index + 1].angle
+          : samples[0].angle + TAU;
+        const gap = next - samples[index].angle;
+        if (gap > largestGap) {
+          largestGap = gap;
+          cutAfter = index;
+        }
+      }
+
+      const ordered = [];
+      let previous = null;
+      for (let offset = 1; offset <= samples.length; offset += 1) {
+        const sample = samples[(cutAfter + offset) % samples.length];
+        let angle = sample.angle;
+        if (previous != null) {
+          while (angle <= previous + 1e-9) angle += TAU;
+        }
+        ordered.push({ node: sample.node, angle });
+        previous = angle;
+      }
+      const start = ordered[0].angle - padding;
+      const end = ordered[ordered.length - 1].angle + padding;
+      return {
+        nodes: unique,
+        orderedNodes: ordered.map(sample => sample.node),
+        start,
+        end,
+        center: (start + end) / 2,
+        span: end - start
+      };
+    }
+
+    function rotateDescriptorsAfterLargestGap(descriptors, centerGetter) {
+      if (descriptors.length <= 1) return descriptors.slice();
+      const sorted = descriptors.slice().sort((left, right) =>
+        mod(centerGetter(left), TAU) - mod(centerGetter(right), TAU)
+      );
+      let cutAfter = 0;
+      let largestGap = -1;
+      for (let index = 0; index < sorted.length; index += 1) {
+        const current = mod(centerGetter(sorted[index]), TAU);
+        const next = index + 1 < sorted.length
+          ? mod(centerGetter(sorted[index + 1]), TAU)
+          : mod(centerGetter(sorted[0]), TAU) + TAU;
+        const gap = next - current;
+        if (gap > largestGap) {
+          largestGap = gap;
+          cutAfter = index;
+        }
+      }
+      return Array.from(
+        { length: sorted.length },
+        (_, offset) => sorted[(cutAfter + 1 + offset) % sorted.length]
+      );
+    }
+
+    function buildAnnularRibbonDescriptors(pairs, positions, layout) {
+      const descriptors = pairs.map((pair, index) => {
+        const outerArc = circularArcDescriptor(
+          pair.outerNodes,
+          positions,
+          layout.geometry.outerOrder.length
+        );
+        const innerArc = circularArcDescriptor(
+          pair.innerNodes,
+          positions,
+          layout.geometry.innerCounterclockwise.length
+        );
+        return { ...pair, index, outerArc, innerArc };
+      }).filter(descriptor => descriptor.outerArc && descriptor.innerArc);
+      if (!descriptors.length) return [];
+
+      const ordered = rotateDescriptorsAfterLargestGap(
+        descriptors,
+        descriptor => descriptor.outerArc.center
+      );
+
+      let previousOuter = null;
+      for (const descriptor of ordered) {
+        let center = mod(descriptor.outerArc.center, TAU);
+        if (previousOuter != null) {
+          while (center <= previousOuter + 1e-7) center += TAU;
+        }
+        descriptor.outerLiftCenter = center;
+        previousOuter = center;
+      }
+
+      let previousInner = null;
+      for (const descriptor of ordered) {
+        let center = mod(descriptor.innerArc.center, TAU);
+        if (previousInner != null) {
+          while (center <= previousInner + 1e-7) center += TAU;
+        }
+        descriptor.innerLiftCenter = center;
+        previousInner = center;
+      }
+
+      const averageOuter = ordered.reduce((sum, descriptor) => sum + descriptor.outerLiftCenter, 0) / ordered.length;
+      const averageInner = ordered.reduce((sum, descriptor) => sum + descriptor.innerLiftCenter, 0) / ordered.length;
+      const baseShift = Math.round((averageOuter - averageInner) / TAU);
+      let bestShift = baseShift;
+      let bestCost = Infinity;
+      for (let candidate = baseShift - 1; candidate <= baseShift + 1; candidate += 1) {
+        const shift = candidate * TAU;
+        const cost = ordered.reduce((sum, descriptor) => {
+          const difference = descriptor.innerLiftCenter + shift - descriptor.outerLiftCenter;
+          return sum + difference * difference;
+        }, 0);
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestShift = candidate;
+        }
+      }
+      const globalInnerShift = bestShift * TAU;
+
+      for (const descriptor of ordered) {
+        const outerShift = descriptor.outerLiftCenter - descriptor.outerArc.center;
+        const innerShift = descriptor.innerLiftCenter + globalInnerShift - descriptor.innerArc.center;
+        descriptor.outerStart = descriptor.outerArc.start + outerShift;
+        descriptor.outerEnd = descriptor.outerArc.end + outerShift;
+        descriptor.innerStart = descriptor.innerArc.start + innerShift;
+        descriptor.innerEnd = descriptor.innerArc.end + innerShift;
+        descriptor.windingCost = Math.abs(
+          (descriptor.innerLiftCenter + globalInnerShift) - descriptor.outerLiftCenter
+        );
+      }
+      return ordered;
+    }
+
+    function appendPolarPoint(context, cx, cy, radius, angle, move = false) {
+      const x = cx + radius * Math.cos(angle - Math.PI / 2);
+      const y = cy + radius * Math.sin(angle - Math.PI / 2);
+      if (move) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+
+    function appendPolarArc(context, cx, cy, radius, start, end, move = false) {
+      const steps = Math.max(3, Math.ceil(Math.abs(end - start) / (Math.PI / 30)));
+      for (let step = 0; step <= steps; step += 1) {
+        const t = step / steps;
+        appendPolarPoint(context, cx, cy, radius, start + (end - start) * t, move && step === 0);
+      }
+    }
+
+    function appendPolarConnector(context, cx, cy, radiusStart, angleStart, radiusEnd, angleEnd) {
+      const steps = Math.max(12, Math.ceil(Math.abs(angleEnd - angleStart) / (Math.PI / 36)));
+      for (let step = 1; step <= steps; step += 1) {
+        const t = step / steps;
+        const eased = t * t * (3 - 2 * t);
+        const radius = radiusStart + (radiusEnd - radiusStart) * eased;
+        const angle = angleStart + (angleEnd - angleStart) * t;
+        appendPolarPoint(context, cx, cy, radius, angle);
+      }
+    }
+
+    function drawAnnularRibbon(context, descriptor, layout, style) {
+      context.save();
+      context.globalAlpha = style.alpha ?? 1;
+      context.strokeStyle = style.stroke;
+      context.fillStyle = style.fill || "transparent";
+      context.lineWidth = style.lineWidth || 2;
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.beginPath();
+      appendPolarArc(
+        context,
+        layout.cx,
+        layout.cy,
+        layout.outerRadius - 1.5,
+        descriptor.outerStart,
+        descriptor.outerEnd,
+        true
+      );
+      appendPolarConnector(
+        context,
+        layout.cx,
+        layout.cy,
+        layout.outerRadius - 1.5,
+        descriptor.outerEnd,
+        layout.innerRadius + 1.5,
+        descriptor.innerEnd
+      );
+      appendPolarArc(
+        context,
+        layout.cx,
+        layout.cy,
+        layout.innerRadius + 1.5,
+        descriptor.innerEnd,
+        descriptor.innerStart
+      );
+      appendPolarConnector(
+        context,
+        layout.cx,
+        layout.cy,
+        layout.innerRadius + 1.5,
+        descriptor.innerStart,
+        layout.outerRadius - 1.5,
+        descriptor.outerStart
+      );
+      context.closePath();
+      if (style.fill) context.fill();
+      context.stroke();
+      context.restore();
+    }
+
+    function drawBoundaryRibbon(context, block, positions, layout, style, boundary) {
+      if (!block || block.length < 2) return;
+      const count = boundary === "outer"
+        ? layout.geometry.outerOrder.length
+        : layout.geometry.innerCounterclockwise.length;
+      const arc = circularArcDescriptor(block, positions, count);
+      if (!arc) return;
+      const boundaryRadius = boundary === "outer" ? layout.outerRadius - 1 : layout.innerRadius + 1;
+      const bandWidth = clamp(5.5, layout.size * 0.012, 10.5);
+      const bandRadius = boundary === "outer"
+        ? boundaryRadius - bandWidth
+        : boundaryRadius + bandWidth;
+      context.save();
+      context.globalAlpha = style.alpha ?? 1;
+      context.strokeStyle = style.stroke;
+      context.fillStyle = style.fill || "transparent";
+      context.lineWidth = style.lineWidth || 2;
+      context.lineJoin = "round";
+      context.beginPath();
+      appendPolarArc(context, layout.cx, layout.cy, boundaryRadius, arc.start, arc.end, true);
+      appendPolarConnector(context, layout.cx, layout.cy, boundaryRadius, arc.end, bandRadius, arc.end);
+      appendPolarArc(context, layout.cx, layout.cy, bandRadius, arc.end, arc.start);
+      appendPolarConnector(context, layout.cx, layout.cy, bandRadius, arc.start, boundaryRadius, arc.start);
+      context.closePath();
+      if (style.fill) context.fill();
+      context.stroke();
+      context.restore();
+    }
+
+    function splitCircularRuns(nodes, order) {
+      const indexByNode = new Map(order.map((node, index) => [node, index]));
+      const indices = Array.from(new Set(nodes))
+        .map(node => indexByNode.get(node))
+        .filter(index => index != null)
+        .sort((left, right) => left - right);
+      if (!indices.length) return [];
+      if (indices.length === order.length) return [indices.map(index => order[index])];
+
+      let cutAfter = 0;
+      let largestGap = -1;
+      for (let index = 0; index < indices.length; index += 1) {
+        const next = index + 1 < indices.length ? indices[index + 1] : indices[0] + order.length;
+        const gap = next - indices[index];
+        if (gap > largestGap) {
+          largestGap = gap;
+          cutAfter = index;
+        }
+      }
+
+      const circular = Array.from(
+        { length: indices.length },
+        (_, offset) => indices[(cutAfter + 1 + offset) % indices.length]
+      );
+      for (let index = 1; index < circular.length; index += 1) {
+        while (circular[index] <= circular[index - 1]) circular[index] += order.length;
+      }
+      const runs = [];
+      let current = [];
+      for (const liftedIndex of circular) {
+        if (current.length && liftedIndex !== current[current.length - 1].index + 1) {
+          runs.push(current.map(entry => order[mod(entry.index, order.length)]));
+          current = [];
+        }
+        current.push({ index: liftedIndex });
+      }
+      if (current.length) runs.push(current.map(entry => order[mod(entry.index, order.length)]));
+      return runs;
+    }
+
+    function drawInnerZeroRing(context, layout, style) {
+      const outer = layout.innerRadius + clamp(6, layout.size * 0.011, 10);
+      const inner = Math.max(8, layout.innerRadius - clamp(5, layout.size * 0.009, 8));
+      context.save();
+      context.globalAlpha = style.alpha ?? 1;
+      context.strokeStyle = style.stroke;
+      context.fillStyle = style.fill || "transparent";
+      context.lineWidth = style.lineWidth || 2;
+      context.beginPath();
+      context.arc(layout.cx, layout.cy, outer, 0, TAU);
+      context.arc(layout.cx, layout.cy, inner, 0, TAU, true);
+      context.closePath();
+      if (style.fill) context.fill();
+      context.stroke();
+      context.restore();
+    }
+
+    function drawZeroBlock(context, block, positions, layout, style) {
+      const rank = transformData.targetRank;
+      const outerLimit = transformData.outerValueCount;
+      const outerNodes = block.filter(node => gddFullNodeData(node, rank).value <= outerLimit);
+      const innerNodes = block.filter(node => gddFullNodeData(node, rank).value > outerLimit);
+      const outerRuns = splitCircularRuns(outerNodes, layout.geometry.outerOrder);
+      const innerSorted = innerNodes.slice().sort((left, right) =>
+        clockwiseAngle(positions[left]) - clockwiseAngle(positions[right])
+      );
+      const packetCount = Math.max(1, outerRuns.length);
+      const packetSize = Math.max(1, Math.round(innerSorted.length / packetCount));
+      const innerPackets = [];
+      for (let packet = 0; packet < packetCount; packet += 1) {
+        innerPackets.push(innerSorted.slice(packet * packetSize, (packet + 1) * packetSize));
+      }
+      if (innerPackets.length && innerPackets.flat().length < innerSorted.length) {
+        innerPackets[innerPackets.length - 1].push(...innerSorted.slice(innerPackets.flat().length));
+      }
+
+      const outerOrdered = rotateDescriptorsAfterLargestGap(
+        outerRuns.map((nodes, index) => ({ nodes, index, arc: circularArcDescriptor(nodes, positions, layout.geometry.outerOrder.length) })),
+        entry => entry.arc.center
+      );
+      let bestPairs = [];
+      let bestCost = Infinity;
+      for (let shift = 0; shift < Math.max(1, innerPackets.length); shift += 1) {
+        const pairs = outerOrdered.map((entry, index) => ({
+          block,
+          outerNodes: entry.nodes,
+          innerNodes: innerPackets[mod(index + shift, innerPackets.length)] || innerNodes,
+          style
+        }));
+        const descriptors = buildAnnularRibbonDescriptors(pairs, positions, layout);
+        const cost = descriptors.reduce((sum, descriptor) => sum + descriptor.windingCost, 0);
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestPairs = descriptors;
+        }
+      }
+
+      const petalStyle = {
+        ...style,
+        fill: "rgba(71,84,103,0.085)",
+        lineWidth: Math.max(1.7, (style.lineWidth || 2.2) - 0.25)
+      };
+      for (const descriptor of bestPairs) drawAnnularRibbon(context, descriptor, layout, petalStyle);
+      drawInnerZeroRing(context, layout, style);
+    }
+
+    // Certify the circular ordering on a cut annulus, then route its edges.
+    // Straight Euclidean hulls in the *displayed* annulus are not a valid
+    // drawing rule: they can cross the hole and each other after a rotation.
+    // Peripheral edges use nested boundary arcs; bridges preserve cyclic
+    // order on every intermediate circle. All nodes remain fixed.
+    // This changes only the embedding, never the partition or the action.
+    const annularPathCache = new WeakMap();
+
+    function annularDiskOrderIsNoncrossing(order, blockOf, blockCount) {
+      const last = new Int32Array(blockCount).fill(-1);
+      order.forEach((node, index) => { last[blockOf[node]] = index; });
+      const opened = new Uint8Array(blockCount);
+      const stack = [];
+      for (let index = 0; index < order.length; index += 1) {
+        const block = blockOf[order[index]];
+        if (!opened[block]) {
+          opened[block] = 1;
+          stack.push(block);
+        } else if (stack[stack.length - 1] !== block) {
+          return false;
+        }
+        if (last[block] === index) stack.pop();
+      }
+      return true;
+    }
+
+    function annularBoundaryCuts(order, blockOf, blockCount, counterclockwise, phase = 0) {
+      const count = order.length;
+      const cuts = [];
+      for (let offset = 0; offset < count; offset += 1) {
+        const rotated = order.slice(offset).concat(order.slice(0, offset));
+        const first = new Int32Array(blockCount).fill(-1);
+        const last = new Int32Array(blockCount).fill(-1);
+        rotated.forEach((node, index) => {
+          const block = blockOf[node];
+          if (first[block] < 0) first[block] = index;
+          last[block] = index;
+        });
+        // Prefer seams that do not turn a short peripheral block into a
+        // nearly complete circuit around the hole.
+        let cost = 0;
+        for (let block = 0; block < blockCount; block += 1) {
+          if (first[block] >= 0) cost += Math.pow((last[block] - first[block]) / count, 2);
+        }
+        cuts.push({
+          order: rotated,
+          angle: phase + (counterclockwise ? -1 : 1) * (offset - 0.5) * TAU / count,
+          cost
+        });
+      }
+      return cuts;
+    }
+
+    function chooseAnnularDiskCut(blocks, geometry) {
+      const blockOf = new Int32Array(geometry.positions.length);
+      blocks.forEach((block, index) => block.forEach(node => { blockOf[node] = index; }));
+      const outerCuts = annularBoundaryCuts(geometry.outerOrder, blockOf, blocks.length, false);
+      const innerCuts = annularBoundaryCuts(
+        geometry.innerCounterclockwise, blockOf, blocks.length, true, geometry.innerPhase || 0
+      );
+      const candidates = [];
+      for (const outer of outerCuts) {
+        for (const inner of innerCuts) {
+          const twist = mod(inner.angle - outer.angle + Math.PI, TAU) - Math.PI;
+          candidates.push({ outer, inner, twist,
+            cost: outer.cost + inner.cost + 0.035 * Math.pow(twist / Math.PI, 2) });
+        }
+      }
+      candidates.sort((a, b) => a.cost - b.cost);
+      for (const candidate of candidates) {
+        const order = candidate.outer.order.concat(candidate.inner.order);
+        if (annularDiskOrderIsNoncrossing(order, blockOf, blocks.length)) {
+          return { ...candidate, order };
+        }
+      }
+      // Do not silently draw a crossing hull or change the user's partition.
+      throw new Error("No noncrossing annular drawing was found for these blocks.");
+    }
+
+    function buildNoncrossingAnnularPaths(blocks, layout) {
+      const cached = annularPathCache.get(blocks);
+      const geometry = layout.geometry;
+      const stamp = [layout.cx, layout.cy, layout.outerRadius, layout.innerRadius,
+        geometry.rank, geometry.outerValueCount, geometry.innerPhase, d_global].join(":");
+      if (cached && cached.stamp === stamp) return cached.paths;
+      const cut = chooseAnnularDiskCut(blocks, geometry);
+      const outerCount = geometry.outerOrder.length;
+      const innerCount = geometry.innerCounterclockwise.length;
+      const outerSeam = cut.outer.angle;
+      const innerSeam = outerSeam + cut.twist;
+      const outerX = new Map(cut.outer.order.map((node, index) => [node, index + 0.5]));
+      const innerX = new Map(cut.inner.order.slice().reverse().map((node, index) => [node, index + 0.5]));
+      const gap = layout.outerRadius - layout.innerRadius;
+      const outerDepth = gap * 0.30;
+      const innerDepth = gap * 0.22;
+      const coreOuter = layout.outerRadius - outerDepth - gap * 0.015;
+      const coreInner = layout.innerRadius + innerDepth + gap * 0.015;
+      const rows = blocks.map(block => ({
+        block,
+        outer: block.filter(node => outerX.has(node)).sort((a, b) => outerX.get(a) - outerX.get(b)),
+        inner: block.filter(node => innerX.has(node)).sort((a, b) => innerX.get(a) - innerX.get(b))
+      }));
+      const zero = rows.find(row => row.outer.length && row.inner.length === innerCount);
+      let outerSpan = 1, innerSpan = 1;
+      for (const row of rows) {
+        if (row === zero) {
+          for (let i = 0; i < row.outer.length; i++) {
+            const a = outerX.get(row.outer[i]);
+            const b = i + 1 < row.outer.length ? outerX.get(row.outer[i+1]) : outerX.get(row.outer[0]) + outerCount;
+            outerSpan = Math.max(outerSpan, b - a);
+          }
+        } else if (row.outer.length > 1) {
+          if (!row.inner.length) outerSpan = Math.max(outerSpan, outerX.get(row.outer.at(-1)) - outerX.get(row.outer[0]));
+          else for (let i = 1; i < row.outer.length; i++) outerSpan = Math.max(outerSpan, outerX.get(row.outer[i]) - outerX.get(row.outer[i-1]));
+        }
+        if (row.inner.length > 1 && row !== zero) {
+          if (!row.outer.length) innerSpan = Math.max(innerSpan, innerX.get(row.inner.at(-1)) - innerX.get(row.inner[0]));
+          else for (let i = 1; i < row.inner.length; i++) innerSpan = Math.max(innerSpan, innerX.get(row.inner[i]) - innerX.get(row.inner[i-1]));
+        }
+      }
+      const outerBend = Math.min(4 * outerDepth / (outerSpan * outerSpan), layout.outerRadius * Math.pow(TAU / outerCount, 2) / 2);
+      const innerBend = Math.min(4 * innerDepth / (innerSpan * innerSpan), layout.innerRadius * Math.pow(TAU / innerCount, 2) / 2);
+      const polar = (radius, angle) => ({
+        x: layout.cx + radius * Math.cos(angle - Math.PI / 2),
+        y: layout.cy + radius * Math.sin(angle - Math.PI / 2)
+      });
+      const perGap = count => Math.max(4, Math.ceil(TAU / count * Math.sqrt(layout.outerRadius / 0.24)));
+
+      // All edges on a boundary use the SAME parabolic depth rule and angular
+      // mesh. Nested intervals therefore remain strictly nested, even after
+      // flattening to canvas line segments. Do not pick independent Bezier
+      // control points or independent sample grids for different blocks.
+      function boundaryEdge(a, b, boundary) {
+        const outer = boundary === "outer";
+        const count = outer ? outerCount : innerCount;
+        const seam = outer ? outerSeam : innerSeam;
+        const bend = outer ? outerBend : innerBend;
+        const radius = outer ? layout.outerRadius : layout.innerRadius;
+        const steps = Math.max(1, Math.round(Math.abs(b - a) * perGap(count)));
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+          const x = a + (b - a) * i / steps;
+          const depth = bend * (x - Math.min(a, b)) * (Math.max(a, b) - x);
+          points.push(polar(radius + (outer ? -depth : depth), seam + TAU * x / count));
+        }
+        return points;
+      }
+      const append = (points, addition) => {
+        if (points.length) points.push(...addition.slice(1));
+        else points.push(...addition);
+      };
+      function boundaryChain(nodes, boundary, closed) {
+        if (nodes.length < 2) return nodes.length ? [{...geometry.positions[nodes[0]]}] : [];
+        const indices = boundary === "outer" ? outerX : innerX;
+        const points = [];
+        const count = closed && nodes.length > 2 ? nodes.length : nodes.length - 1;
+        for (let i = 0; i < count; i++) {
+          append(points, boundaryEdge(indices.get(nodes[i]), indices.get(nodes[(i+1)%nodes.length]), boundary));
+        }
+        return points;
+      }
+      function bridge(outerNode, innerNode) {
+        const a = outerSeam + TAU * outerX.get(outerNode) / outerCount;
+        const b = innerSeam + TAU * innerX.get(innerNode) / innerCount;
+        const points = [{...geometry.positions[outerNode]}, polar(coreOuter, a)];
+        // Every bridge uses the same radial levels and the same angular
+        // interpolation weight. This preserves the cyclic order of bridges
+        // at every radius, including the copies across the angular seam.
+        const steps = Math.max(96, Math.ceil(layout.outerRadius * Math.pow(TAU + Math.abs(cut.twist), 2) / (coreOuter - coreInner)));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const ease = t*t*(3-2*t);
+          points.push(polar(coreOuter + (coreInner - coreOuter)*t, a + (b - a)*ease));
+        }
+        points.push({...geometry.positions[innerNode]});
+        return points;
+      }
+      const stems = [];
+      const paths = rows.map(row => {
+        const {block, outer, inner} = row;
+        if (block.length < 2) return {block, points:[], closed:false};
+        if (row === zero) {
+          const points = [];
+          for (let i = 0; i < outer.length; i++) {
+            const a = outerX.get(outer[i]);
+            const b = i + 1 < outer.length ? outerX.get(outer[i+1]) : outerX.get(outer[0]) + outerCount;
+            append(points, boundaryEdge(a, b, "outer"));
+          }
+          points[points.length-1] = points[0];
+          const hole = [];
+          const count = innerCount * perGap(innerCount);
+          for (let i = 0; i <= count; i++) hole.push(polar(layout.innerRadius, innerSeam - TAU * i / count));
+          hole[hole.length-1] = hole[0];
+          return {block, points, holes:[hole], closed:true};
+        }
+        if (!inner.length || !outer.length) {
+          const points = boundaryChain(outer.length ? outer : inner, outer.length ? "outer" : "inner", true);
+          if (block.length > 2) points[points.length-1] = points[0];
+          return {block, points, closed:block.length>2};
+        }
+        if (block.length === 2) return {block, points:bridge(outer[0], inner[0]), closed:false};
+        function blockBridge(outerNode, innerNode) {
+          const points = bridge(outerNode, innerNode);
+          if (outer.length === 1) points.shift();
+          if (inner.length === 1) points.pop();
+          return points;
+        }
+        const endBridge = blockBridge(outer.at(-1), inner.at(-1));
+        const startBridge = blockBridge(outer[0], inner[0]);
+        const points = outer.length > 1 ? boundaryChain(outer, "outer", false) : [startBridge[0]];
+        append(points, endBridge);
+        if (inner.length > 1) append(points, boundaryChain(inner.slice().reverse(), "inner", false));
+        append(points, startBridge.slice().reverse());
+        points[points.length-1] = points[0];
+        // A block incident with just one node on a boundary has one stem,
+        // not two coincident sides of a degenerate filled polygon.
+        if (outer.length === 1) stems.push({block, points:[{...geometry.positions[outer[0]]}, startBridge[0]], closed:false});
+        if (inner.length === 1) stems.push({block, points:[startBridge.at(-1), {...geometry.positions[inner[0]]}], closed:false});
+        return {block, points, closed:true};
+      });
+      paths.push(...stems);
+      annularPathCache.set(blocks, {stamp, paths});
+      return paths;
+    }
+
+    function drawGddBlockSystem(context, blocks, positions, layout, alpha = 1, layer = null) {
+      const paths = buildNoncrossingAnnularPaths(blocks, layout);
+      for (const path of paths) {
+        if (path.points.length < 2) continue;
+        const style = gddBlockStyle(
+          path.block, layout.geometry.rank, layout.geometry.outerValueCount, alpha, layer
+        );
+        context.save();
+        context.globalAlpha = style.alpha ?? 1;
+        context.strokeStyle = style.stroke;
+        context.fillStyle = style.fill || "transparent";
+        context.lineWidth = Math.min(style.lineWidth || 2.2, 2.35);
+        context.lineJoin = "round";
+        context.lineCap = "round";
+        context.beginPath();
+        context.moveTo(path.points[0].x, path.points[0].y);
+        for (let i = 1; i < path.points.length; i += 1) context.lineTo(path.points[i].x, path.points[i].y);
+        if (path.closed) {
+          context.closePath();
+          for (const hole of path.holes || []) {
+            context.moveTo(hole[0].x, hole[0].y);
+            for (let i = 1; i < hole.length; i++) context.lineTo(hole[i].x, hole[i].y);
+            context.closePath();
+          }
+          if (style.fill) context.fill("evenodd");
+        }
+        context.stroke();
+        context.restore();
+      }
+    }
+
+    function drawAnnularGuides(context, cx, cy, outerRadius, innerRadius, alpha = 1) {
+      context.save();
+      context.globalAlpha = alpha;
+      context.strokeStyle = "rgba(88,105,133,0.24)";
+      context.lineWidth = 1.15;
+      context.beginPath();
+      context.arc(cx, cy, outerRadius, 0, TAU);
+      context.stroke();
+      context.beginPath();
+      context.arc(cx, cy, innerRadius, 0, TAU);
+      context.stroke();
+      context.setLineDash([3, 5]);
+      context.strokeStyle = "rgba(88,105,133,0.18)";
+      for (let sector = 0; sector < d_global; sector += 1) {
+        const angle = -Math.PI / 2 + sector * TAU / d_global;
+        context.beginPath();
+        context.moveTo(cx + innerRadius * 0.86 * Math.cos(angle), cy + innerRadius * 0.86 * Math.sin(angle));
+        context.lineTo(cx + outerRadius * 1.025 * Math.cos(angle), cy + outerRadius * 1.025 * Math.sin(angle));
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    function resetGddActionState() {
+      gddActionBlocks = transformData && transformData.mode === "gdd"
+        ? transformData.annularBlocks.map(block => block.slice())
+        : null;
+      gddActionInitialKey = gddActionBlocks ? canonicalBlockKey(gddActionBlocks) : "";
+      gddActionStep = 0;
+    }
+
+    function gddActionOrder() {
+      return k_global * d_global * Math.max(1, rank_global - 1);
+    }
+
 
     // Public helper retained for compatibility with the previous file.
     function getKrewerasBlocks(permutation = null) {
@@ -1386,11 +3436,66 @@
     }
 
     function chainCanvasSize() {
-      return Math.round(clamp(310, 255 + N_global * 4.2, 540));
+      const displayedNodes = isGddMode() ? d_global * rank_global : N_global;
+      return Math.round(clamp(310, 255 + displayedNodes * 4.2, 560));
     }
 
     function singleCanvasSize() {
       return Math.round(clamp(560, 370 + (transformData ? transformData.M : k_global * N_global) * 5.4, 1120));
+    }
+
+
+    function drawGddPartition(canvas, blocks, step) {
+      const size = Number(canvas.dataset.logicalSize);
+      const context = canvasContext(canvas);
+      clearCanvas(context, size);
+      const cx = size / 2;
+      const cy = size / 2;
+      const outerRadius = size / 2 - clamp(50, size * 0.13, 76);
+      const innerRadius = outerRadius * 0.38;
+      const geometry = annularPositions(rank_global, n_global, cx, cy, outerRadius, innerRadius);
+      drawAnnularGuides(context, cx, cy, outerRadius, innerRadius);
+
+      // The input cards need the same annular embedding as the tau image.
+      // Straight hulls can cross the hole or other blocks even at k = 1.
+      const layout = { size, context, cx, cy, outerRadius, innerRadius, geometry };
+      drawGddBlockSystem(context, blocks, geometry.positions, layout, 1, step);
+
+      const nodeRadius = clamp(3.2, 6.2 - (d_global * rank_global) / 95, 5.4);
+      const outerLabelRadius = outerRadius + clamp(20, size * 0.052, 30);
+      const innerLabelRadius = Math.max(12, innerRadius - clamp(18, size * 0.038, 25));
+      const labelFont = clamp(7.2, 12 - (d_global * rank_global) / 36, 11.5);
+      const positionsByNode = new Array(N_global);
+
+      for (let fullNode = 0; fullNode < d_global * rank_global; fullNode += 1) {
+        const meta = gddFullNodeData(fullNode, rank_global);
+        const position = geometry.positions[fullNode];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.color, 1, 39),
+          stroke: "rgba(255,255,255,0.92)",
+          lineWidth: 1,
+          selected: meta.value < rank_global && Boolean(selectedNode && selectedNode.node ===
+            (meta.color - 1) * n_global + meta.value - 1)
+        });
+
+        const labelRadius = meta.value <= n_global ? outerLabelRadius : innerLabelRadius;
+        const labelPosition = {
+          x: cx + labelRadius * Math.cos(position.angle),
+          y: cy + labelRadius * Math.sin(position.angle)
+        };
+        drawLabel(context, labelPosition.x, labelPosition.y, meta.value, meta.color, {
+          fontSize: labelFont,
+          color: superscriptColor(meta.color, 1, 32)
+        });
+
+        if (meta.value <= n_global) {
+          const outerNode = (meta.color - 1) * n_global + meta.value - 1;
+          positionsByNode[outerNode] = position;
+        }
+      }
+
+      chainRenderCache[step] = { positionsByNode, radius: outerRadius, cx, cy, size };
     }
 
     function drawPartition(canvas, blocks, step) {
@@ -1448,21 +3553,30 @@
     }
 
     function renderAll() {
+      // A resize event can fire before the initial multichain has finished generating.
+      // Ignore that transient state rather than trying to render undefined levels.
+      if (!Array.isArray(multichainEdges) || multichainEdges.length < k_global ||
+          multichainEdges.some(level => !Array.isArray(level))) return;
+
       chainContainer.innerHTML = "";
       chainRenderCache = [];
 
       for (let step = 0; step < k_global; step += 1) {
         const dsu = partitionAt(step);
-        const blocks = dsu.blocks(baseRank);
+        const outerBlocks = dsu.blocks(baseRank);
+        const blocks = isGddMode() ? buildGddLabeledBlocksFromDsu(dsu, step) : outerBlocks;
         const wrapper = document.createElement("article");
         wrapper.className = "canvas-wrapper";
 
         const head = document.createElement("div");
         head.className = "card-head";
+        const kicker = isGddMode()
+          ? `Cumulative level ${step + 1} of ${k_global}; annular-labelled G(d,d,n) model`
+          : `Cumulative level ${step + 1} of ${k_global}`;
         head.innerHTML = `
           <div>
             <h2 class="card-title">π<sub>${step + 1}</sub></h2>
-            <p class="card-kicker">Cumulative level ${step + 1} of ${k_global}</p>
+            <p class="card-kicker">${kicker}</p>
           </div>
           <span class="block-badge">${blocks.length} block${blocks.length === 1 ? "" : "s"}</span>
         `;
@@ -1477,7 +3591,8 @@
         scroller.appendChild(canvas);
         wrapper.append(head, scroller);
         chainContainer.appendChild(wrapper);
-        drawPartition(canvas, blocks, step);
+        if (isGddMode()) drawGddPartition(canvas, blocks, step);
+        else drawPartition(canvas, blocks, step);
       }
     }
 
@@ -1572,8 +3687,11 @@
       return records;
     }
 
-    function invalidateTransform(message = "The multichain changed. Apply δ + shuffle again.") {
+    function invalidateTransform(message = (isGddMode()
+      ? "The multichain changed. Apply the τ map again."
+      : "The multichain changed. Apply δ + shuffle again.")) {
       transformData = null;
+      useKNLabels = false;
       currentView = "chain";
       clearKActionState();
       singleCanvas = null;
@@ -1585,6 +3703,7 @@
     }
 
     function toggleConnection(u, v, step) {
+      const snapshot = multichainEdges.map(level => level.map(edge => edge.slice()));
       const current = partitionAt(step);
       if (current.find(u) !== current.find(v)) {
         const edge = [u, v];
@@ -1594,6 +3713,12 @@
           return;
         }
         multichainEdges[step].push(edge);
+        if (!isGddMode() && positiveModeEnabled() && !multichainHasFullSupport()) {
+          multichainEdges = snapshot;
+          renderAll();
+          setStatus("That edit was blocked because positive mode requires πₖ to retain full support.", "warning");
+          return;
+        }
         invalidateTransform("Blocks merged symmetrically. The transformed view was reset.");
         renderAll();
         return;
@@ -1611,6 +3736,13 @@
         removed += 1;
       }
 
+      if (removed && !isGddMode() && positiveModeEnabled() && !multichainHasFullSupport()) {
+        multichainEdges = snapshot;
+        renderAll();
+        setStatus("That separation was blocked because positive mode requires πₖ to retain full support.", "warning");
+        return;
+      }
+
       invalidateTransform(
         removed
           ? `${removed} generating edge${removed === 1 ? "" : "s"} removed to separate the selected nodes.`
@@ -1620,6 +3752,10 @@
     }
 
     function buildSingleCard() {
+      if (isGddMode()) {
+        buildGddSingleCard();
+        return;
+      }
       singleContainer.innerHTML = "";
       singleContainer.hidden = false;
       singleContainer.classList.add("entering");
@@ -1633,10 +3769,9 @@
             <p id="single-subtitle" class="card-kicker"></p>
           </div>
           <div class="single-toolbar" aria-label="Transformed view controls">
-            <button id="view-shuffle-btn" class="btn-shuffle" type="button">Shuffle</button>
             <button id="view-overlay-btn" class="btn-kreweras" type="button">K overlay</button>
-            <button id="view-final-btn" class="btn-final" type="button">Final ∇</button>
-            <button id="k-action-btn" class="btn-kreweras" type="button" disabled>Apply K action</button>
+            <button id="view-final-btn" class="btn-final" type="button" hidden>Final ∇</button>
+            <button id="k-action-btn" class="btn-kreweras" type="button" hidden disabled>Apply K action</button>
           </div>
         </div>
         <div id="single-canvas-scroll" class="canvas-scroll"></div>
@@ -1646,10 +3781,8 @@
 
       singleContainer.appendChild(wrapper);
 
-      // Keep the label control with the transformed/Kreweras view controls.
-      const singleToolbar = wrapper.querySelector(".single-toolbar");
-      singleToolbar.appendChild(labelsButton);
-      labelsButton.hidden = false;
+      // Expanded labels are applied automatically in both group modes.
+      labelsButton.hidden = true;
 
       const scroller = wrapper.querySelector("#single-canvas-scroll");
       singleLogicalSize = singleCanvasSize();
@@ -1657,12 +3790,45 @@
       singleCanvas.setAttribute("aria-label", "Transformed noncrossing partition");
       scroller.appendChild(singleCanvas);
 
-      wrapper.querySelector("#view-shuffle-btn").addEventListener("click", drawShuffleFinal);
       wrapper.querySelector("#view-overlay-btn").addEventListener("click", drawKrewerasSuperimposed);
       wrapper.querySelector("#view-final-btn").addEventListener("click", drawKrewerasFinal);
       wrapper.querySelector("#k-action-btn").addEventListener("click", applyFinalKAction);
 
       updateKActionButton();
+      updateDiagnostics();
+      requestAnimationFrame(() => singleContainer.classList.remove("entering"));
+    }
+
+
+    function buildGddSingleCard() {
+      singleContainer.innerHTML = "";
+      singleContainer.hidden = false;
+      singleContainer.classList.add("entering");
+      const wrapper = document.createElement("article");
+      wrapper.className = "canvas-wrapper single-card";
+      wrapper.innerHTML = `
+        <div class="card-head">
+          <div class="single-heading-wrap">
+            <h2 id="single-title" class="card-title">Annular τ image</h2>
+            <p id="single-subtitle" class="card-kicker"></p>
+          </div>
+          <div class="single-toolbar" aria-label="Annular model controls">
+            <button id="gdd-action-btn" class="gdd-action-button" type="button">Z<sub>kh</sub></button>
+          </div>
+        </div>
+        <div id="single-canvas-scroll" class="canvas-scroll"></div>
+        <div id="single-legend" class="legend"></div>
+        <div id="single-diagnostics" class="diagnostics"></div>
+      `;
+      singleContainer.appendChild(wrapper);
+      labelsButton.hidden = true;
+      const scroller = wrapper.querySelector("#single-canvas-scroll");
+      singleLogicalSize = singleCanvasSize();
+      singleCanvas = makeCanvas(singleLogicalSize, "single-canvas");
+      singleCanvas.setAttribute("aria-label", "Annular G(d,d,n) noncrossing partition");
+      scroller.appendChild(singleCanvas);
+      wrapper.querySelector("#gdd-action-btn").addEventListener("click", applyGddZkhAction);
+      updateGddActionButton();
       updateDiagnostics();
       requestAnimationFrame(() => singleContainer.classList.remove("entering"));
     }
@@ -1714,17 +3880,29 @@
     }
 
     function updateKActionButton() {
+      updateTransformationControls();
       const button = document.getElementById("k-action-btn");
       if (!button) return;
-      const order = theorem48Order();
-      button.textContent = order > 0
-        ? `Apply K action · ${kActionStep}/${order}`
-        : "Apply K action";
+      const positiveMode = positiveModeEnabled();
+      const order = activeActionOrder();
+      if (positiveMode) {
+        button.textContent = order > 0
+          ? `Apply K action · ${kActionStep}/${order}`
+          : "Apply K action";
+        button.setAttribute("aria-label", `Apply the positive K action; step ${kActionStep} of ${order}.`);
+      } else {
+        button.innerHTML = order > 0
+          ? `Z<sub>kh</sub> · ${kActionStep}/${order}`
+          : "Z<sub>kh</sub>";
+        button.setAttribute("aria-label", `Apply the Z k h Case 0 action; step ${kActionStep} of ${order}.`);
+      }
       button.disabled = isAnimating || currentView !== "final" ||
         !kActionPermutation || Boolean(kActionIssue);
-      button.title = kActionIssue || (kActionNextCase == null
-        ? "Apply the positive Kreweras action from Theorem 4.8."
-        : `Next application: ${theorem48CaseLabel(kActionNextCase)} from Theorem 4.8.`);
+      button.title = kActionIssue || (positiveMode
+        ? (kActionNextCase == null
+          ? "The cyclic action has three possible cases."
+          : `The cyclic action has three possible cases. Next application: ${theorem48CaseLabel(kActionNextCase)}.`)
+        : "Apply the Z_kh generator: Case 0 clockwise rotation only.");
     }
 
     function finalLegendItems() {
@@ -1737,19 +3915,30 @@
 
     function updateFinalViewText() {
       if (!transformData) return;
+      const positiveMode = positiveModeEnabled();
       const baseSubtitle = `${kActionBlocks ? kActionBlocks.length : transformData.krewerasBlocks.length} complement blocks on ${transformData.M} nodes after deleting the nonprime nodes; the shuffle colors are retained.`;
       let subtitle = baseSubtitle;
-      if (kActionIssue) {
-        subtitle += ` Theorem 4.8 K action unavailable: ${kActionIssue}`;
+
+      if (positiveMode) {
+        if (kActionIssue) {
+          subtitle += ` Positive K action unavailable: ${kActionIssue}`;
+        } else if (kActionStep === 0) {
+          subtitle += ` The cyclic action has three possible cases. Next K application uses ${theorem48CaseLabel(kActionNextCase)}.`;
+        } else {
+          subtitle = `The cyclic action has three possible cases. K step ${kActionStep} of ${theorem48Order()}; the last application used ${theorem48CaseLabel(kActionLastCase)}, and the next uses ${theorem48CaseLabel(kActionNextCase)}.`;
+        }
+      } else if (kActionIssue) {
+        subtitle += ` Zₖₕ action unavailable: ${kActionIssue}`;
       } else if (kActionStep === 0) {
-        subtitle += ` Next K application uses ${theorem48CaseLabel(kActionNextCase)}.`;
+        subtitle += " The Zₖₕ action uses Case 0 only: one clockwise boundary-unit rotation.";
       } else {
-        subtitle = `K step ${kActionStep} of ${theorem48Order()}; the last application used ${theorem48CaseLabel(kActionLastCase)}, and the next uses ${theorem48CaseLabel(kActionNextCase)}.`;
+        subtitle = `Zₖₕ step ${kActionStep} of ${zkhOrder()}; every application uses Case 0 clockwise rotation.`;
       }
+
       updateSingleText(
         kActionStep === 0
           ? "Final ∇ image = K ∘ Sf ∘ Ω⁻¹ ∘ δ ∘ Ω"
-          : "Theorem 4.8 positive Kreweras action",
+          : (positiveMode ? "Positive cyclic action" : "Zₖₕ action — Case 0 rotation"),
         subtitle,
         finalLegendItems()
       );
@@ -1759,7 +3948,24 @@
     function updateDiagnostics() {
       const node = document.getElementById("single-diagnostics");
       if (!node || !transformData) return;
+      if (transformData.mode === "gdd") {
+        const labels = [
+          ["Source cycles lie in G(d,d,n)", transformData.checks.sourceGroupElements],
+          ["τ is a permutation", transformData.checks.tauPermutation],
+          ["Annular ordering is noncrossing", transformData.checks.annularNoncrossing],
+          ["Blocks are k-divisible", transformData.checks.kDivisible],
+          ["Color symmetry holds", transformData.checks.colorSymmetric],
+          ["Residues advance modulo k", transformData.checks.residueCondition],
+          ["π₁ block sizes scale by k", transformData.checks.blockSizeScaling],
+          ["Annular case is preserved", transformData.checks.caseCorrespondence]
+        ];
+        node.innerHTML = labels.map(([label, passed]) =>
+          `<span class="check-chip ${passed ? "" : "fail"}">${passed ? "✓" : "✕"} ${label}</span>`
+        ).join("");
+        return;
+      }
       const labels = [
+        ["πₖ has full support", currentMultichainHasFullSupport()],
         ["Shuffle is a permutation", transformData.checks.shuffledPermutation],
         ["Shuffle is noncrossing", transformData.checks.shuffledNoncrossing],
         ["K is noncrossing", transformData.checks.krewerasNoncrossing],
@@ -1782,6 +3988,178 @@
         shuffledValue: (baseMeta.value - 1) * k_global + layer + 1,
         displayValue: useKNLabels ? (baseMeta.value - 1) * k_global + layer + 1 : baseMeta.value
       };
+    }
+
+
+    function gddCaseLabel(caseName) {
+      if (caseName === "zero") return "zero block + outer blocks";
+      if (caseName === "inner") return "inner blocks + outer blocks";
+      if (caseName === "annular") return "annular blocks + outer blocks";
+      return "outer blocks";
+    }
+
+    function gddLegendItems() {
+      return [
+        { label: "outer blocks", className: "outer-block" },
+        { label: "inner blocks", className: "inner-block" },
+        { label: "annular blocks", className: "annular-block" },
+        { label: "zero block", className: "zero-block" },
+        ...nodeColorLegendItems()
+      ];
+    }
+
+    function prepareGddCanvas() {
+      const size = singleLogicalSize;
+      const context = canvasContext(singleCanvas);
+      clearCanvas(context, size);
+      const cx = size / 2;
+      const cy = size / 2;
+      const outerRadius = size / 2 - clamp(70, size * 0.13, 104);
+      const innerRadius = outerRadius * 0.39;
+      const geometry = annularPositions(
+        transformData.targetRank,
+        transformData.outerValueCount,
+        cx,
+        cy,
+        outerRadius,
+        innerRadius
+      );
+      drawAnnularGuides(context, cx, cy, outerRadius, innerRadius);
+      return { size, context, cx, cy, outerRadius, innerRadius, geometry };
+    }
+
+    function drawGddBoundary(context, layout, alpha = 1) {
+      const total = transformData.M;
+      const nodeRadius = clamp(2.4, 6 - total / 155, 5.15);
+      const outerLabelRadius = layout.outerRadius + clamp(22, layout.size * 0.044, 38);
+      const innerLabelRadius = Math.max(14, layout.innerRadius - clamp(21, layout.size * 0.038, 31));
+      const labelFont = clamp(6.2, 11.5 - total / 70, 10.4);
+      for (let node = 0; node < total; node += 1) {
+        const meta = gddFullNodeData(node, transformData.targetRank);
+        const position = layout.geometry.positions[node];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.color, alpha, 42),
+          stroke: `rgba(255,255,255,${0.9 * alpha})`,
+          lineWidth: 1
+        });
+        const labelRadius = meta.value <= transformData.outerValueCount
+          ? outerLabelRadius
+          : innerLabelRadius;
+        const labelPosition = {
+          x: layout.cx + labelRadius * Math.cos(position.angle),
+          y: layout.cy + labelRadius * Math.sin(position.angle)
+        };
+        const displayValue = useKNLabels ? meta.value : Math.ceil(meta.value / k_global);
+        drawLabel(context, labelPosition.x, labelPosition.y, displayValue, meta.color, {
+          fontSize: labelFont,
+          color: superscriptColor(meta.color, alpha, 31)
+        });
+      }
+    }
+
+    function drawGddAnnular(progress = 1, blocks = null) {
+      if (!singleCanvas || !transformData || transformData.mode !== "gdd") return;
+      const layout = prepareGddCanvas();
+      const sourceBlocks = blocks || gddActionBlocks || transformData.annularBlocks;
+      drawGddBlockSystem(
+        layout.context,
+        sourceBlocks,
+        layout.geometry.positions,
+        layout,
+        progress
+      );
+      drawGddBoundary(layout.context, layout, progress);
+    }
+
+    function updateGddActionButton() {
+      updateTransformationControls();
+      const button = document.getElementById("gdd-action-btn");
+      if (!button) return;
+      const order = gddActionOrder();
+      button.innerHTML = `Z<sub>kh</sub> · ${gddActionStep}/${order}`;
+      button.disabled = isAnimating || !transformData || transformData.mode !== "gdd";
+      button.title = "Rotate the outer boundary clockwise and the inner boundary counterclockwise.";
+      button.setAttribute("aria-label", `Apply the Z k h action; step ${gddActionStep} of ${order}.`);
+    }
+
+    function updateGddViewText() {
+      if (!transformData || transformData.mode !== "gdd") return;
+      const classification = classifyGddBlocks(
+        gddActionBlocks || transformData.annularBlocks,
+        transformData.targetRank,
+        transformData.outerValueCount
+      );
+      const order = gddActionOrder();
+      const subtitle = gddActionStep === 0
+        ? `${transformData.outerOrder.length} outer vertices and ${transformData.innerCounterclockwise.length} inner vertices; ${gddCaseLabel(classification.caseName)}. The Zₖₕ generator has order kh=${order}.`
+        : `Zₖₕ step ${gddActionStep} of ${order}; outer blocks rotate clockwise while inner blocks rotate counterclockwise.`;
+      updateSingleText(
+        gddActionStep === 0 ? "Annular τ image" : "Zₖₕ action",
+        subtitle,
+        gddLegendItems()
+      );
+      updateGddActionButton();
+    }
+
+    function drawGddActionTransition(progress, fromBlocks, toBlocks) {
+      if (!singleCanvas || !transformData || transformData.mode !== "gdd") return;
+      const layout = prepareGddCanvas();
+      if (progress < 0.5) {
+        drawGddBlockSystem(
+          layout.context,
+          fromBlocks,
+          layout.geometry.positions,
+          layout,
+          1 - progress * 2
+        );
+      } else {
+        drawGddBlockSystem(
+          layout.context,
+          toBlocks,
+          layout.geometry.positions,
+          layout,
+          (progress - 0.5) * 2
+        );
+      }
+      drawGddBoundary(layout.context, layout, 1);
+    }
+
+    function applyGddZkhAction() {
+      if (!transformData || transformData.mode !== "gdd" || isAnimating || !gddActionBlocks) return;
+      const fromBlocks = gddActionBlocks.map(block => block.slice());
+      const toBlocks = fromBlocks.map(block => block.map(node => transformData.rotationPermutation[node]));
+      const checks = {
+        kDivisible: toBlocks.every(block => block.length % k_global === 0),
+        colorSymmetric: isGddColorSymmetric(toBlocks, transformData.targetRank),
+        annularBlockSystem: isValidAnnularBlockSystem(
+          toBlocks,
+          transformData.targetRank,
+          transformData.outerValueCount
+        ) && areAnnularBlocksNoncrossing(
+          toBlocks, transformData.targetRank, transformData.outerValueCount
+        )
+      };
+      if (Object.values(checks).some(value => !value)) {
+        setStatus("The Zₖₕ rotation failed an annular partition invariant.", "error");
+        return;
+      }
+      setStatus("Applying Zₖₕ: outer boundary clockwise, inner boundary counterclockwise…", "info");
+      animate(560, progress => drawGddActionTransition(progress, fromBlocks, toBlocks), () => {
+        gddActionBlocks = toBlocks;
+        const order = gddActionOrder();
+        gddActionStep = mod(gddActionStep + 1, order);
+        drawGddAnnular(1);
+        setPipeline(gddActionStep === 0 ? "shuffle" : "overlay");
+        updateGddViewText();
+        const returned = gddActionStep === 0 && canonicalBlockKey(gddActionBlocks) === gddActionInitialKey;
+        setStatus(
+          returned
+            ? `The Zₖₕ action completed its order-${order} orbit and returned to the original annular model.`
+            : `Applied Zₖₕ. The annular model is now at step ${gddActionStep} of ${order}.`,
+          "success"
+        );
+      });
     }
 
     function drawShuffle(progress = 1) {
@@ -2128,9 +4506,12 @@
         return;
       }
 
+      const positiveMode = positiveModeEnabled();
       let result;
       try {
-        result = applyTheorem48Kappa(kActionPermutation);
+        result = positiveMode
+          ? applyTheorem48Kappa(kActionPermutation)
+          : applyZkhCase0(kActionPermutation);
       } catch (error) {
         kActionIssue = error.message;
         updateKActionButton();
@@ -2141,7 +4522,9 @@
       const fromBlocks = kActionBlocks.map(block => block.slice());
       const toBlocks = result.blocks.map(block => block.slice());
       setStatus(
-        `Applying Theorem 4.8 ${theorem48CaseLabel(result.caseNumber)} (${formatTheorem48Parameters(result)})…`,
+        positiveMode
+          ? `Applying ${theorem48CaseLabel(result.caseNumber)} (${formatTheorem48Parameters(result)})…`
+          : "Applying the Zₖₕ generator: Case 0 clockwise rotation…",
         "info"
       );
 
@@ -2152,7 +4535,8 @@
         kActionBlocks = result.blocks;
         kActionLastCase = result.caseNumber;
         kActionNextCase = result.nextCaseNumber;
-        kActionStep = mod(kActionStep + 1, theorem48Order());
+        const order = activeActionOrder();
+        kActionStep = mod(kActionStep + 1, order);
         drawFinalKActionState();
         updateFinalViewText();
 
@@ -2160,8 +4544,12 @@
         const returnedExactly = atNominalReturn && arraysEqual(kActionPermutation, kActionInitialPermutation);
         setStatus(
           returnedExactly
-            ? `The positive Kreweras action completed its full order-${theorem48Order()} cycle and returned to the original final model.`
-            : `Applied ${theorem48CaseLabel(result.caseNumber)}. The model is now at K step ${kActionStep} of ${theorem48Order()}.`,
+            ? (positiveMode
+              ? `The positive Kreweras action completed its full order-${order} cycle and returned to the original final model.`
+              : `The Zₖₕ action completed its full order-${order} cycle and returned to the original final model.`)
+            : (positiveMode
+              ? `Applied ${theorem48CaseLabel(result.caseNumber)}. The model is now at K step ${kActionStep} of ${order}.`
+              : `Applied Zₖₕ Case 0. The model is now at step ${kActionStep} of ${order}.`),
           "success"
         );
       });
@@ -2196,6 +4584,10 @@
     }
 
     function animateNablaToSingleModel() {
+      if (isGddMode()) {
+        animateTauToAnnularModel();
+        return;
+      }
       if (isAnimating || !multichainEdges.length) return;
       setStatus("Computing Ω, δ, and the shuffle permutation…", "info");
 
@@ -2207,6 +4599,7 @@
         return;
       }
 
+      useKNLabels = true;
       currentView = "shuffle";
       clearKActionState();
       buildSingleCard();
@@ -2223,6 +4616,36 @@
 
       animate(850, drawShuffle, () => {
         setStatus("Shuffle complete. The block permutation is retained exactly for the Kreweras step.", "success");
+        singleContainer.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "start" });
+      });
+    }
+
+
+    function animateTauToAnnularModel() {
+      if (isAnimating || !multichainEdges.length) return;
+      setStatus("Computing Ω and the τ permutation…", "info");
+      try {
+        transformData = buildGddTransformData();
+      } catch (error) {
+        transformData = null;
+        setStatus(error.message, "error");
+        return;
+      }
+      useKNLabels = true;
+      currentView = "gdd-annulus";
+      clearKActionState();
+      resetGddActionState();
+      buildSingleCard();
+      chainContainer.classList.add("is-background");
+      setPipeline("shuffle");
+      updateGddViewText();
+      animate(900, progress => drawGddAnnular(progress), () => {
+        drawGddAnnular(1);
+        updateGddActionButton();
+        setStatus(
+          `τ map complete. The output is the ${gddCaseLabel(transformData.targetCase.caseName)} case, and Zₖₕ is ready.`,
+          "success"
+        );
         singleContainer.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "start" });
       });
     }
@@ -2274,7 +4697,9 @@
         setStatus(
           kActionIssue
             ? `Final ∇ model complete. ${kActionIssue}`
-            : `Final ∇ model complete. The next K application uses ${theorem48CaseLabel(kActionNextCase)} from Theorem 4.8.`,
+            : (positiveModeEnabled()
+              ? `Final ∇ model complete. The cyclic action has three possible cases. The next K application uses ${theorem48CaseLabel(kActionNextCase)}.`
+              : "Final ∇ model complete. Zₖₕ is ready and will use Case 0 clockwise rotation only."),
           kActionIssue ? "warning" : "success"
         );
       });
@@ -2282,6 +4707,10 @@
 
     function redrawCurrentSingleView() {
       if (!transformData || !singleCanvas) return;
+      if (transformData.mode === "gdd") {
+        drawGddAnnular(1);
+        return;
+      }
       if (currentView === "overlay") drawOverlay(1);
       else if (currentView === "final") drawFinalKActionState();
       else drawShuffle(1);
@@ -2291,6 +4720,15 @@
       useKNLabels = !useKNLabels;
       labelsButton.innerHTML = useKNLabels ? "Labels: 1…<i>kn</i>" : "Labels: 1…<i>n</i>";
       redrawCurrentSingleView();
+      if (isGddMode()) {
+        setStatus(
+          useKNLabels
+            ? "Showing the values 1,…,kn on both annular boundaries."
+            : "Showing the original values 1,…,n; node color records the cyclic color class.",
+          "info"
+        );
+        return;
+      }
       setStatus(
         useKNLabels
           ? "Showing the relabelled 1,…,kn values within each color sector."
@@ -2303,14 +4741,19 @@
       const d = Number.parseInt(document.getElementById("d_val").value, 10);
       const n = Number.parseInt(document.getElementById("n_val").value, 10);
       const k = Number.parseInt(document.getElementById("k_val").value, 10);
-      if (![d, n, k].every(Number.isFinite) || d < 1 || n < 1 || k < 1) {
-        throw new Error("d, n, and k must be positive integers.");
+      const minimumRank = isGddMode() ? 2 : 1;
+      const minimumColorOrder = isGddMode() ? 2 : 1;
+      if (![d, n, k].every(Number.isFinite) || d < minimumColorOrder || n < minimumRank || k < 1) {
+        throw new Error(isGddMode()
+          ? "For the irreducible G(d,d,n) model, d and n must be at least 2 and k must be positive."
+          : "d, n, and k must be positive integers.");
       }
-      if (d * n > MAX_BASE_NODES) {
-        throw new Error(`This visualizer is limited to dn ≤ ${MAX_BASE_NODES} nodes per chain level.`);
+      const baseDisplayCount = d * n;
+      if (baseDisplayCount > MAX_BASE_NODES) {
+        throw new Error(`This visualizer is limited to dn ≤ ${MAX_BASE_NODES} displayed nodes per chain level.`);
       }
       if (d * n * k > MAX_SHUFFLED_NODES) {
-        throw new Error(`This visualizer is limited to kdn ≤ ${MAX_SHUFFLED_NODES} shuffled nodes.`);
+        throw new Error(`This visualizer is limited to kdn ≤ ${MAX_SHUFFLED_NODES} transformed nodes.`);
       }
       return { d, n, k };
     }
@@ -2326,7 +4769,8 @@
       }
 
       d_global = parameters.d;
-      n_global = parameters.n;
+      rank_global = parameters.n;
+      n_global = isGddMode() ? rank_global - 1 : rank_global;
       k_global = parameters.k;
       N_global = d_global * n_global;
 
@@ -2342,23 +4786,125 @@
       singleCanvas = null;
       currentView = "chain";
       clearKActionState();
+      gddCentralAnchor = null;
+      gddCentralAttachStep = null;
+      gddGeneratedRanks = [];
+      gddDiskPositions = buildGddDiskPositions();
+      gddActionBlocks = null;
+      gddActionInitialKey = "";
+      gddActionStep = 0;
       singleContainer.hidden = true;
       singleContainer.innerHTML = "";
       chainContainer.classList.remove("is-background");
 
-      generateRandomMultichain();
+      let generation;
+      try {
+        generation = isGddMode() ? generateGddMultichain() : generateMultichainForMode();
+      } catch (error) {
+        setButtonsDisabled(false);
+        setStatus(error.message, "error");
+        return;
+      }
       renderAll();
       setPipeline("chain");
       setButtonsDisabled(false);
+      if (isGddMode()) {
+        setStatus(
+          `Generated a random ${k_global}-multichain in G(${d_global},${d_global},${rank_global}) at ranks (${generation.rankSequence.join(", ")}); π₁ is in the ${gddCaseLabel(generation.caseName)} case. Every valid multichain has nonzero sampling probability.`,
+          "success"
+        );
+      } else {
+        setStatus(
+          positiveModeEnabled()
+            ? `Generated a positive ${k_global}-multichain on ${N_global} base nodes; πₖ has full support.`
+            : `Generated ${k_global} inclusion-ordered partition${k_global === 1 ? "" : "s"} on ${N_global} base nodes with the positive restriction off.`,
+          "success"
+        );
+      }
+    }
+
+    function handlePositiveModeChange() {
+      if (isAnimating || isGddMode()) return;
+
+      if (positiveModeEnabled() && multichainEdges.length && !multichainHasFullSupport()) {
+        generateMultichain();
+        return;
+      }
+
+      if (transformData) {
+        resetKActionState();
+        updateDiagnostics();
+        if (currentView === "final") {
+          drawFinalKActionState();
+          updateFinalViewText();
+        } else {
+          updateKActionButton();
+        }
+      }
+
       setStatus(
-        `Generated ${k_global} inclusion-ordered partition${k_global === 1 ? "" : "s"} on ${N_global} base nodes.`,
-        "success"
+        positiveModeEnabled()
+          ? "Positive mode enabled. πₖ is required to have full support, and the cyclic action has three possible cases."
+          : "Positive mode disabled. The original multichain is unrestricted, and the final button is Zₖₕ.",
+        "info"
       );
+    }
+
+
+    function updateModeUI() {
+      const dInput = document.getElementById("d_val");
+      const nInput = document.getElementById("n_val");
+      const shuffleStage = document.querySelector("#pipeline-shuffle .stage-label");
+      const overlayStage = document.querySelector("#pipeline-overlay .stage-label");
+      const finalStage = document.querySelector("#pipeline-final .stage-label");
+      const finalItem = document.getElementById("pipeline-final");
+
+      if (isGddMode()) {
+        document.body.dataset.group = "gdd";
+        heroTitle.innerHTML = "<i>G</i>(<i>d</i>, <i>d</i>, <i>n</i>) noncrossing multichains";
+        heroSubtitle.textContent = "Generate a G(d,d,n) multichain, apply the τ map, and act on the annular model by Zₖₕ.";
+        shuffleButton.innerHTML = "Apply τ";
+        positiveModeWrap.hidden = true;
+        gddModeNote.hidden = true;
+        dInput.min = "2";
+        if (Number(dInput.value) < 2) dInput.value = "2";
+        nInput.min = "2";
+        if (Number(nInput.value) < 2) nInput.value = "2";
+        shuffleStage.textContent = "τ annular model";
+        overlayStage.textContent = "Zₖₕ annular action";
+        finalItem.hidden = true;
+        finalStage.textContent = "";
+        editingHint.innerHTML = "Editing: click two <em>outer</em> nodes in any πᵣ card. The central/inner labels follow the G(d,d,n) orbit rule automatically; any edit invalidates the τ image.";
+      } else {
+        document.body.dataset.group = "gd1";
+        heroTitle.innerHTML = "<i>G</i>(<i>d</i>, 1, <i>n</i>) noncrossing multichains";
+        heroSubtitle.textContent = "Generate an inclusion-ordered multichain, apply δ and the shuffle map, then construct the Kreweras complement using interleaved prime nodes and noncrossing convex hulls.";
+        shuffleButton.innerHTML = "Apply δ + shuffle";
+        positiveModeWrap.hidden = false;
+        gddModeNote.hidden = true;
+        dInput.min = "1";
+        nInput.min = "1";
+        shuffleStage.textContent = "δ factors + shuffle Sf";
+        overlayStage.textContent = "Kreweras overlay";
+        finalItem.hidden = false;
+        finalStage.textContent = "Final ∇ image";
+        editingHint.innerHTML = "Editing: click two nodes in any πᵣ card. Different blocks are merged (with all <i>d</i> symmetric copies); nodes in the same block are separated by removing a path edge. Any edit invalidates the transformed view.";
+      }
+      positiveModeCheckbox.disabled = isGddMode();
+    }
+
+    function handleGroupModeChange() {
+      if (isAnimating) return;
+      groupType = groupModeCheckbox.checked ? "gdd" : "gd1";
+      updateModeUI();
+      generateMultichain();
     }
 
     generateButton.addEventListener("click", generateMultichain);
     shuffleButton.addEventListener("click", animateNablaToSingleModel);
     labelsButton.addEventListener("click", toggleLabels);
+    positiveModeCheckbox.addEventListener("change", handlePositiveModeChange);
+    groupModeCheckbox.addEventListener("change", handleGroupModeChange);
 
     window.generateMultichain = generateMultichain;
     window.animateNablaToSingleModel = animateNablaToSingleModel;
@@ -2366,10 +4912,23 @@
     window.drawKrewerasFinal = drawKrewerasFinal;
     window.applyFinalKAction = applyFinalKAction;
     window.applyTheorem48Kappa = applyTheorem48Kappa;
+    window.applyZkhCase0 = applyZkhCase0;
+    window.applyGddZkhAction = applyGddZkhAction;
+    window.buildGddTransformData = buildGddTransformData;
+    window.getGddGenerationSnapshot = () => ({
+      ranks: gddGeneratedRanks.slice(),
+      centralAttachStep: gddCentralAttachStep,
+      centralAnchor: gddCentralAnchor,
+      blocks: Array.from({ length: k_global }, (_, step) => buildGddLabeledBlocks(step).map(block => block.slice()))
+    });
+    window.multichainHasFullSupport = multichainHasFullSupport;
     window.analyzeTheorem48Case = analyzeTheorem48Case;
     window.getKrewerasBlocks = getKrewerasBlocks;
 
-    window.addEventListener("load", generateMultichain);
+    window.addEventListener("load", () => {
+      updateModeUI();
+      generateMultichain();
+    });
     window.addEventListener("resize", () => {
       // Canvas coordinates are logical and CSS-scaled; a redraw keeps text crisp after zoom/layout changes.
       renderAll();
