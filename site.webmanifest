@@ -1,0 +1,15 @@
+{
+  "name": "Jason Stack — Mathematics Research",
+  "short_name": "Jason Stack",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f2eb",
+  "theme_color": "#0d6d68",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

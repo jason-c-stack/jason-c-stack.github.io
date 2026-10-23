@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<!-- Color-class revision: plain node labels; shuffle colors persist through Kreweras views. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G(d,1,n) Noncrossing Multichain Visualizer</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9e0ea;
+      --panel: rgba(255, 255, 255, 0.94);
+      --panel-strong: #ffffff;
+      --page: #f3f6fb;
+      --primary: #2557d6;
+      --primary-dark: #1d43a5;
+      --shuffle: #0f8a73;
+      --shuffle-dark: #0b6e5b;
+      --kreweras: #9a5a08;
+      --kreweras-dark: #734306;
+      --final: #2949a7;
+      --danger: #b42318;
+      --success: #137a54;
+      --shadow: 0 16px 42px rgba(31, 48, 78, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(37, 87, 214, 0.09), transparent 34rem),
+        radial-gradient(circle at 95% 8%, rgba(15, 138, 115, 0.08), transparent 30rem),
+        var(--page);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 28px clamp(14px, 3vw, 44px) 54px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 8px;
+      margin: 0 auto 22px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      max-width: 880px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: clamp(0.96rem, 1.3vw, 1.08rem);
+    }
+
+    .control-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding: 18px;
+      border: 1px solid rgba(217, 224, 234, 0.92);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .parameter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(92px, 150px));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      text-align: left;
+    }
+
+    .field label {
+      color: #344054;
+      font-size: 0.82rem;
+      font-weight: 750;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 11px;
+      border: 1px solid #c8d1df;
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .field input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 87, 214, 0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 11px;
+      padding: 9px 14px;
+      color: #fff;
+      background: var(--primary);
+      font-weight: 750;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(37, 87, 214, 0.18);
+      transition: transform 140ms ease, filter 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(0.97);
+      box-shadow: 0 9px 20px rgba(37, 87, 214, 0.23);
+    }
+
+    button:active:not(:disabled) { transform: translateY(0); }
+
+    button:focus-visible {
+      outline: 3px solid rgba(37, 87, 214, 0.30);
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.46;
+      box-shadow: none;
+    }
+
+    .btn-shuffle { background: var(--shuffle); }
+    .btn-secondary {
+      color: #344054;
+      background: #eef2f7;
+      box-shadow: none;
+    }
+    .btn-kreweras { background: var(--kreweras); }
+    .btn-final { background: var(--final); }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .pipeline li {
+      position: relative;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+      font-size: 0.84rem;
+      font-weight: 720;
+      text-align: center;
+      transition: 220ms ease;
+    }
+
+    .pipeline .step-number {
+      display: inline-grid;
+      place-items: center;
+      width: 25px;
+      height: 25px;
+      flex: 0 0 25px;
+      border-radius: 50%;
+      color: #667085;
+      background: #e8edf5;
+      font-size: 0.75rem;
+    }
+
+    .pipeline li.complete {
+      border-color: rgba(19, 122, 84, 0.28);
+      color: #16634a;
+      background: rgba(19, 122, 84, 0.07);
+    }
+
+    .pipeline li.complete .step-number {
+      color: #fff;
+      background: var(--success);
+    }
+
+    .pipeline li.active {
+      border-color: rgba(37, 87, 214, 0.42);
+      color: var(--primary-dark);
+      background: rgba(37, 87, 214, 0.09);
+      box-shadow: inset 0 0 0 1px rgba(37, 87, 214, 0.07);
+    }
+
+    .pipeline li.active .step-number {
+      color: #fff;
+      background: var(--primary);
+    }
+
+    #status-message {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 14px 0 2px;
+      padding: 9px 13px;
+      border-radius: 12px;
+      color: #344054;
+      font-size: 0.92rem;
+      font-weight: 650;
+      text-align: center;
+    }
+
+    #status-message[data-tone="info"] { background: rgba(37, 87, 214, 0.07); }
+    #status-message[data-tone="success"] { color: #145f47; background: rgba(19, 122, 84, 0.08); }
+    #status-message[data-tone="warning"] { color: #7a4707; background: rgba(154, 90, 8, 0.09); }
+    #status-message[data-tone="error"] { color: var(--danger); background: rgba(180, 35, 24, 0.08); }
+
+    #canvas-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+      gap: 16px;
+      align-items: start;
+      transition: opacity 280ms ease, filter 280ms ease;
+    }
+
+    #canvas-container.is-background {
+      opacity: 0.42;
+      filter: saturate(0.72);
+    }
+
+    .canvas-wrapper {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-strong);
+      box-shadow: 0 10px 30px rgba(31, 48, 78, 0.08);
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 16px 10px;
+      text-align: left;
+    }
+
+    .card-title {
+      margin: 0;
+      color: #27334a;
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+
+    .card-kicker {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .block-badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #475467;
+      background: #f0f3f8;
+      font-size: 0.72rem;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .canvas-scroll {
+      width: 100%;
+      overflow: auto;
+      padding: 0 10px 12px;
+      scrollbar-width: thin;
+    }
+
+    canvas {
+      display: block;
+      max-width: none;
+      margin: 0 auto;
+      border-radius: 14px;
+      background: #fff;
+      touch-action: manipulation;
+    }
+
+    .chain-canvas { cursor: crosshair; }
+
+    #single-model-container {
+      margin-top: 18px;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    #single-model-container[hidden] { display: none; }
+
+    #single-model-container.entering {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .single-card {
+      border-color: rgba(15, 138, 115, 0.30);
+      box-shadow: 0 18px 48px rgba(21, 55, 92, 0.12);
+    }
+
+    .single-card .card-head {
+      align-items: center;
+      border-bottom: 1px solid #edf1f6;
+      padding-bottom: 13px;
+    }
+
+    .single-heading-wrap { min-width: 0; }
+
+    .single-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .single-toolbar button {
+      min-height: 37px;
+      padding: 7px 11px;
+      font-size: 0.82rem;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 15px;
+      padding: 0 14px 14px;
+      color: #536076;
+      font-size: 0.78rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 18px;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(23, 32, 51, 0.16);
+      background: #d7dfed;
+    }
+
+    .legend-swatch.complement {
+      border-color: #2f69b0;
+      background: rgba(233, 181, 61, 0.65);
+    }
+
+    .diagnostics {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 14px 15px;
+    }
+
+    .check-chip {
+      border: 1px solid rgba(19, 122, 84, 0.22);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #146046;
+      background: rgba(19, 122, 84, 0.06);
+      font-size: 0.72rem;
+      font-weight: 720;
+    }
+
+    .check-chip.fail {
+      border-color: rgba(180, 35, 24, 0.22);
+      color: var(--danger);
+      background: rgba(180, 35, 24, 0.06);
+    }
+
+    .hint {
+      margin: 14px auto 0;
+      max-width: 980px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .control-panel { grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
+      .single-card .card-head { align-items: flex-start; flex-direction: column; }
+      .single-toolbar { justify-content: flex-start; }
+    }
+
+    @media (max-width: 650px) {
+      .page { padding-inline: 10px; }
+      .parameter-grid { grid-template-columns: repeat(3, 1fr); }
+      .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      button { width: 100%; }
+      .actions { display: grid; grid-template-columns: 1fr; width: 100%; }
+      .single-toolbar { display: grid; grid-template-columns: 1fr; width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Positive noncrossing parking</p>
+      <h1><i>G</i>(<i>d</i>, 1, <i>n</i>) noncrossing multichains</h1>
+      <p class="subtitle">
+        Generate an inclusion-ordered multichain, apply δ and the shuffle map, then construct the
+        Kreweras complement using interleaved prime nodes and noncrossing convex hulls.
+      </p>
+    </header>
+
+    <section class="control-panel" aria-label="Visualizer controls">
+      <div class="parameter-grid">
+        <div class="field">
+          <label for="d_val">Color order <i>d</i></label>
+          <input type="number" id="d_val" value="3" min="1" max="12" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="n_val">Rank <i>n</i></label>
+          <input type="number" id="n_val" value="6" min="1" max="30" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="k_val">Chain length <i>k</i></label>
+          <input type="number" id="k_val" value="3" min="1" max="12" inputmode="numeric">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="generate-btn" type="button">Generate multichain</button>
+        <button id="shuffle-btn" class="btn-shuffle" type="button">Apply δ + shuffle</button>
+        <button id="labels-btn" class="btn-secondary" type="button" hidden>Labels: 1…<i>n</i></button>
+      </div>
+    </section>
+
+    <ol class="pipeline" aria-label="Transformation stages">
+      <li data-stage="chain" class="active"><span class="step-number">1</span><span>Multichain π₁ ≤ ··· ≤ πₖ</span></li>
+      <li data-stage="shuffle"><span class="step-number">2</span><span>δ factors + shuffle Sf</span></li>
+      <li data-stage="overlay"><span class="step-number">3</span><span>Kreweras overlay</span></li>
+      <li data-stage="final"><span class="step-number">4</span><span>Final ∇ image</span></li>
+    </ol>
+
+    <div id="status-message" role="status" aria-live="polite" data-tone="info"></div>
+
+    <section id="canvas-container" aria-label="Noncrossing multichain"></section>
+
+    <section id="single-model-container" aria-label="Transformed model" hidden></section>
+
+    <p class="hint">
+      Editing: click two nodes in any πᵣ card. Different blocks are merged (with all <i>d</i> symmetric copies);
+      nodes in the same block are separated by removing a path edge. Any edit invalidates the transformed view.
+    </p>
+  </main>
+
+  <script>
+    "use strict";
+
+    const MAX_BASE_NODES = 180;
+    const MAX_SHUFFLED_NODES = 480;
+    const TAU = Math.PI * 2;
+    const REDUCED_MOTION = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let d_global = 3;
+    let n_global = 6;
+    let k_global = 3;
+    let N_global = 18;
+
+    // Each entry stores edge representatives introduced at that step. Every representative
+    // is expanded through all d cyclic shifts when a partition is reconstructed.
+    let multichainEdges = [];
+    let selectedNode = null;
+    let isAnimating = false;
+    let useKNLabels = false;
+
+    let baseOrder = [];
+    let baseRank = [];
+    let superscriptOrder = [];
+    let chainRenderCache = [];
+
+    let currentView = "chain";
+    let transformData = null;
+    let singleCanvas = null;
+    let singleLogicalSize = 0;
+
+    // State for the positive Kreweras action K from Theorem 4.8.
+    let kActionPermutation = null;
+    let kActionBlocks = null;
+    let kActionInitialPermutation = null;
+    let kActionStep = 0;
+    let kActionLastCase = null;
+    let kActionNextCase = null;
+    let kActionIssue = "";
+
+    const statusDiv = document.getElementById("status-message");
+    const chainContainer = document.getElementById("canvas-container");
+    const singleContainer = document.getElementById("single-model-container");
+    const generateButton = document.getElementById("generate-btn");
+    const shuffleButton = document.getElementById("shuffle-btn");
+    const labelsButton = document.getElementById("labels-btn");
+
+    class DisjointSet {
+      constructor(size) {
+        this.parent = Array.from({ length: size }, (_, i) => i);
+        this.rank = new Array(size).fill(0);
+      }
+
+      find(i) {
+        if (this.parent[i] !== i) this.parent[i] = this.find(this.parent[i]);
+        return this.parent[i];
+      }
+
+      union(a, b) {
+        let ra = this.find(a);
+        let rb = this.find(b);
+        if (ra === rb) return false;
+        if (this.rank[ra] < this.rank[rb]) [ra, rb] = [rb, ra];
+        this.parent[rb] = ra;
+        if (this.rank[ra] === this.rank[rb]) this.rank[ra] += 1;
+        return true;
+      }
+
+      blocks(orderRank = null) {
+        const map = new Map();
+        for (let i = 0; i < this.parent.length; i += 1) {
+          const root = this.find(i);
+          if (!map.has(root)) map.set(root, []);
+          map.get(root).push(i);
+        }
+        const blocks = Array.from(map.values());
+        if (orderRank) {
+          blocks.forEach(block => block.sort((a, b) => orderRank[a] - orderRank[b]));
+          blocks.sort((a, b) => orderRank[a[0]] - orderRank[b[0]]);
+        } else {
+          blocks.forEach(block => block.sort((a, b) => a - b));
+          blocks.sort((a, b) => a[0] - b[0]);
+        }
+        return blocks;
+      }
+    }
+
+    function clamp(min, value, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function mod(value, modulus) {
+      return ((value % modulus) + modulus) % modulus;
+    }
+
+    function shuffleArray(values) {
+      const result = values.slice();
+      for (let i = result.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function setStatus(message, tone = "info") {
+      statusDiv.textContent = message;
+      statusDiv.dataset.tone = tone;
+    }
+
+    function setPipeline(stage) {
+      const order = ["chain", "shuffle", "overlay", "final"];
+      const activeIndex = order.indexOf(stage);
+      document.querySelectorAll(".pipeline li").forEach(item => {
+        const index = order.indexOf(item.dataset.stage);
+        item.classList.toggle("active", index === activeIndex);
+        item.classList.toggle("complete", index < activeIndex);
+      });
+    }
+
+    function setButtonsDisabled(disabled) {
+      generateButton.disabled = disabled;
+      shuffleButton.disabled = disabled || multichainEdges.length === 0;
+      labelsButton.disabled = disabled;
+      document.querySelectorAll("#single-model-container button").forEach(button => {
+        button.disabled = disabled;
+      });
+      const kActionButton = document.getElementById("k-action-btn");
+      if (kActionButton) {
+        kActionButton.disabled = disabled || currentView !== "final" ||
+          !kActionPermutation || Boolean(kActionIssue);
+      }
+    }
+
+    function getSuperscriptOrder(d) {
+      if (d <= 1) return [1];
+      const order = [1];
+      for (let superscript = d; superscript >= 2; superscript -= 1) order.push(superscript);
+      return order;
+    }
+
+    // Internal node id: (superscript - 1) * n + (value - 1).
+    // Display order is the paper's clockwise order: superscripts 1, d, d-1, ..., 2.
+    function buildBaseOrder(n, d) {
+      const order = [];
+      const superscripts = getSuperscriptOrder(d);
+      for (const superscript of superscripts) {
+        for (let value = 0; value < n; value += 1) {
+          order.push((superscript - 1) * n + value);
+        }
+      }
+      return { order, superscripts };
+    }
+
+    function buildRank(order, size) {
+      const rank = new Array(size);
+      order.forEach((node, index) => { rank[node] = index; });
+      return rank;
+    }
+
+    function rotateNode(node, shift) {
+      const value = node % n_global;
+      const superscriptZero = Math.floor(node / n_global);
+      return mod(superscriptZero + shift, d_global) * n_global + value;
+    }
+
+    function normalizedPair(a, b) {
+      return a < b ? [a, b] : [b, a];
+    }
+
+    function edgeOrbitKey(edge) {
+      const keys = [];
+      for (let shift = 0; shift < d_global; shift += 1) {
+        const [a, b] = normalizedPair(rotateNode(edge[0], shift), rotateNode(edge[1], shift));
+        keys.push(`${a}:${b}`);
+      }
+      return Array.from(new Set(keys)).sort().join("|");
+    }
+
+    function addSymmetricEdge(dsu, edge) {
+      let changed = false;
+      for (let shift = 0; shift < d_global; shift += 1) {
+        changed = dsu.union(rotateNode(edge[0], shift), rotateNode(edge[1], shift)) || changed;
+      }
+      return changed;
+    }
+
+    function partitionAt(step, extraEdge = null, extraStep = null) {
+      const dsu = new DisjointSet(N_global);
+      for (let s = 0; s <= step; s += 1) {
+        for (const edge of multichainEdges[s]) addSymmetricEdge(dsu, edge);
+        if (extraEdge && s === extraStep) addSymmetricEdge(dsu, extraEdge);
+      }
+      return dsu;
+    }
+
+    function circularBlocksCross(blockA, blockB, rank = null) {
+      if (blockA.length < 2 || blockB.length < 2) return false;
+      const a = blockA.map(value => rank ? rank[value] : value).sort((x, y) => x - y);
+      const b = blockB.map(value => rank ? rank[value] : value).sort((x, y) => x - y);
+
+      for (let i = 0; i < a.length; i += 1) {
+        for (let j = i + 1; j < a.length; j += 1) {
+          for (let x = 0; x < b.length; x += 1) {
+            for (let y = x + 1; y < b.length; y += 1) {
+              if ((a[i] < b[x] && b[x] < a[j] && a[j] < b[y]) ||
+                  (b[x] < a[i] && a[i] < b[y] && b[y] < a[j])) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    function isNoncrossingBlocks(blocks, rank = null) {
+      for (let i = 0; i < blocks.length; i += 1) {
+        for (let j = i + 1; j < blocks.length; j += 1) {
+          if (circularBlocksCross(blocks[i], blocks[j], rank)) return false;
+        }
+      }
+      return true;
+    }
+
+    function isProposedEditValid(edge, step) {
+      const duplicateKeys = new Set(multichainEdges.flat().map(edgeOrbitKey));
+      if (duplicateKeys.has(edgeOrbitKey(edge))) return false;
+
+      for (let s = step; s < k_global; s += 1) {
+        const candidate = partitionAt(s, edge, step);
+        if (!isNoncrossingBlocks(candidate.blocks(baseRank), baseRank)) return false;
+      }
+      return true;
+    }
+
+    function tryAddRandomMerge(step) {
+      const current = partitionAt(step);
+      const existingKeys = new Set(multichainEdges.flat().map(edgeOrbitKey));
+      const adjacent = baseOrder.map((node, index) => [node, baseOrder[(index + 1) % N_global]]);
+      const candidates = shuffleArray(adjacent);
+
+      for (let attempt = 0; attempt < Math.max(220, N_global * 12); attempt += 1) {
+        let edge;
+        if (attempt < candidates.length) {
+          edge = candidates[attempt];
+        } else {
+          const u = baseOrder[Math.floor(Math.random() * N_global)];
+          let v = baseOrder[Math.floor(Math.random() * N_global)];
+          if (u === v) v = baseOrder[(baseRank[u] + 1) % N_global];
+          edge = [u, v];
+        }
+
+        if (current.find(edge[0]) === current.find(edge[1])) continue;
+        if (existingKeys.has(edgeOrbitKey(edge))) continue;
+        if (!isProposedEditValid(edge, step)) continue;
+
+        multichainEdges[step].push(edge);
+        return true;
+      }
+      return false;
+    }
+
+    function generateRandomMultichain() {
+      multichainEdges = Array.from({ length: k_global }, () => []);
+      const totalRepresentativeMerges = Math.max(1, Math.min(n_global - 1, Math.round(n_global * 0.72)));
+      const basePerStep = Math.floor(totalRepresentativeMerges / k_global);
+      const remainder = totalRepresentativeMerges % k_global;
+
+      for (let step = 0; step < k_global; step += 1) {
+        let target = basePerStep + (step < remainder ? 1 : 0);
+        if (step === 0 && target === 0) target = 1;
+        for (let merge = 0; merge < target; merge += 1) {
+          if (!tryAddRandomMerge(step)) break;
+        }
+      }
+    }
+
+    function blocksToPermutation(blocks, rank) {
+      const permutation = Array.from({ length: N_global }, (_, i) => i);
+      for (const block of blocks) {
+        const cycle = block.slice().sort((a, b) => rank[a] - rank[b]);
+        for (let i = 0; i < cycle.length; i += 1) {
+          permutation[cycle[i]] = cycle[(i + 1) % cycle.length];
+        }
+      }
+      return permutation;
+    }
+
+    function inversePermutation(permutation) {
+      const inverse = new Array(permutation.length);
+      permutation.forEach((value, index) => { inverse[value] = index; });
+      return inverse;
+    }
+
+    // composePermutations(a, b) is a ∘ b: apply b first, then a.
+    function composePermutations(a, b) {
+      if (a.length !== b.length) throw new Error("Permutation sizes do not match.");
+      return b.map(value => a[value]);
+    }
+
+    function getCoxeterElement() {
+      const coxeter = new Array(N_global);
+      for (let i = 0; i < N_global; i += 1) {
+        coxeter[baseOrder[i]] = baseOrder[(i + 1) % N_global];
+      }
+      return coxeter;
+    }
+
+    function permutationCycles(permutation) {
+      const visited = new Array(permutation.length).fill(false);
+      const cycles = [];
+      for (let start = 0; start < permutation.length; start += 1) {
+        if (visited[start]) continue;
+        const cycle = [];
+        let current = start;
+        while (!visited[current]) {
+          visited[current] = true;
+          cycle.push(current);
+          current = permutation[current];
+        }
+        cycles.push(cycle);
+      }
+      return cycles;
+    }
+
+    function isPermutation(permutation) {
+      if (!Array.isArray(permutation)) return false;
+      const sorted = permutation.slice().sort((a, b) => a - b);
+      return sorted.every((value, index) => value === index);
+    }
+
+    function arraysEqual(left, right) {
+      return Array.isArray(left) && Array.isArray(right) &&
+        left.length === right.length && left.every((value, index) => value === right[index]);
+    }
+
+    function theorem48PerColor() {
+      return k_global * n_global;
+    }
+
+    function theorem48Order() {
+      return d_global * Math.max(0, theorem48PerColor() - 1);
+    }
+
+    function theorem48ShiftColor(color, shift) {
+      return mod(color - 1 + shift, d_global) + 1;
+    }
+
+    function theorem48NodeIndex(value, color) {
+      const perColor = theorem48PerColor();
+      const sector = superscriptOrder.indexOf(color);
+      if (!Number.isInteger(value) || value < 1 || value > perColor || sector < 0) {
+        throw new Error(`Invalid Theorem 4.8 node ${value}^${color}.`);
+      }
+      return sector * perColor + value - 1;
+    }
+
+    function theorem48NodeData(index) {
+      const perColor = theorem48PerColor();
+      const sector = Math.floor(index / perColor);
+      return {
+        value: mod(index, perColor) + 1,
+        color: superscriptOrder[sector]
+      };
+    }
+
+    function circularPermutationFromBlocks(blocks, size) {
+      const permutation = Array.from({ length: size }, (_, index) => index);
+      for (const block of blocks) {
+        const cycle = block.slice().sort((a, b) => a - b);
+        for (let index = 0; index < cycle.length; index += 1) {
+          permutation[cycle[index]] = cycle[(index + 1) % cycle.length];
+        }
+      }
+      return permutation;
+    }
+
+    function cycleContaining(permutation, start) {
+      const cycle = [];
+      const seen = new Set();
+      let current = start;
+      while (!seen.has(current)) {
+        seen.add(current);
+        cycle.push(current);
+        current = permutation[current];
+      }
+      return cycle;
+    }
+
+    function rotatePermutationClockwiseOne(permutation) {
+      const size = permutation.length;
+      const rotated = new Array(size);
+      for (let node = 0; node < size; node += 1) {
+        rotated[mod(node + 1, size)] = mod(permutation[node] + 1, size);
+      }
+      return rotated;
+    }
+
+    function colorShiftNode(index, shift) {
+      const data = theorem48NodeData(index);
+      return theorem48NodeIndex(data.value, theorem48ShiftColor(data.color, shift));
+    }
+
+    function isColorSymmetricPartition(blocks) {
+      if (d_global <= 1) return true;
+      const keys = new Set(blocks.map(block => block.slice().sort((a, b) => a - b).join(",")));
+      return blocks.every(block => {
+        const shifted = block.map(node => colorShiftNode(node, 1)).sort((a, b) => a - b);
+        return keys.has(shifted.join(","));
+      });
+    }
+
+    function analyzeTheorem48Case(permutation) {
+      if (k_global < 2) {
+        return { applicable: false, reason: "Theorem 4.8 assumes k ≥ 2." };
+      }
+      if (d_global < 2) {
+        return { applicable: false, reason: "Theorem 4.8 uses colors 1 and 2, so this button requires d ≥ 2." };
+      }
+      if (!isPermutation(permutation) || permutation.length !== d_global * theorem48PerColor()) {
+        return { applicable: false, reason: "The final blocks do not define the required permutation on [kn]^d." };
+      }
+
+      const perColor = theorem48PerColor();
+      const special = theorem48NodeIndex(perColor, 2); // (kn)^2
+      const oneColorOne = theorem48NodeIndex(1, 1);    // 1^1
+      const specialBlock = cycleContaining(permutation, special);
+
+      const hasAnotherColorTwo = specialBlock.some(node => {
+        const data = theorem48NodeData(node);
+        return node !== special && data.color === 2;
+      });
+
+      if (hasAnotherColorTwo) {
+        return {
+          applicable: true,
+          caseNumber: 0,
+          special,
+          summary: "Case 0: rotate every block one boundary unit clockwise."
+        };
+      }
+
+      // In the positive model of Theorem 4.8, (kn)^2 is followed by 1^1.
+      if (!specialBlock.includes(oneColorOne) || permutation[special] !== oneColorOne) {
+        return {
+          applicable: false,
+          reason: "This final partition is outside the positive/full-support domain of Theorem 4.8: (kn)^2 is not followed by 1^1."
+        };
+      }
+
+      const inverse = inversePermutation(permutation);
+      const predecessor = inverse[special];
+      const predecessorData = theorem48NodeData(predecessor);
+      if (predecessorData.color !== 1 || predecessorData.value >= perColor) {
+        return {
+          applicable: false,
+          reason: "The Theorem 4.8 predecessor a₁¹ of (kn)^2 could not be identified."
+        };
+      }
+
+      // Case (1): among blocks avoiding all 1^j and (kn)^j, locate the
+      // clockwise adjacency a_3^2 -> a_2^1 with minimal a_2.
+      const candidates = [];
+      for (const block of permutationCycles(permutation)) {
+        const avoidsBoundaryValues = block.every(node => {
+          const value = theorem48NodeData(node).value;
+          return value !== 1 && value !== perColor;
+        });
+        if (!avoidsBoundaryValues) continue;
+
+        for (const node of block) {
+          const next = permutation[node];
+          const from = theorem48NodeData(node);
+          const to = theorem48NodeData(next);
+          if (from.color === 2 && to.color === 1) {
+            candidates.push({
+              a3: from.value,
+              a2: to.value,
+              fromNode: node,
+              a2Node: next
+            });
+          }
+        }
+      }
+
+      if (candidates.length) {
+        candidates.sort((left, right) =>
+          (left.a2 - right.a2) || (left.a3 - right.a3) || (left.fromNode - right.fromNode)
+        );
+        const chosen = candidates[0];
+        const afterA2 = permutation[chosen.a2Node];
+        const afterA2Data = theorem48NodeData(afterA2);
+        if (chosen.a2 >= perColor || chosen.a3 >= perColor || afterA2Data.value >= perColor) {
+          return {
+            applicable: false,
+            reason: "The exceptional Case 1 parameters do not lie in the range required by Theorem 4.8."
+          };
+        }
+        return {
+          applicable: true,
+          caseNumber: 1,
+          special,
+          parameters: {
+            a1: predecessorData.value,
+            a2: chosen.a2,
+            a3: chosen.a3,
+            a4: afterA2Data.value,
+            j0: afterA2Data.color
+          },
+          summary: "Case 1: rotate all other relations and perform the two specified equivariant reconnections."
+        };
+      }
+
+      // Case (2): a^1 -> (kn)^2 -> 1^1 is the distinguished triple.
+      return {
+        applicable: true,
+        caseNumber: 2,
+        special,
+        parameters: { a: predecessorData.value },
+        summary: "Case 2: rotate all other relations and reconnect the distinguished boundary triple."
+      };
+    }
+
+    function applyTheorem48Kappa(permutation) {
+      const analysis = analyzeTheorem48Case(permutation);
+      if (!analysis.applicable) throw new Error(analysis.reason);
+
+      const result = rotatePermutationClockwiseOne(permutation);
+
+      if (analysis.caseNumber === 1) {
+        const { a1, a2, a3, a4, j0 } = analysis.parameters;
+        for (let shift = 0; shift < d_global; shift += 1) {
+          const color1 = theorem48ShiftColor(1, shift);
+          const color2 = theorem48ShiftColor(2, shift);
+          const colorJ0 = theorem48ShiftColor(j0, shift);
+
+          result[theorem48NodeIndex(a3 + 1, color2)] = theorem48NodeIndex(1, color1);
+          result[theorem48NodeIndex(1, color1)] = theorem48NodeIndex(a4 + 1, colorJ0);
+          result[theorem48NodeIndex(a1 + 1, color1)] = theorem48NodeIndex(a2 + 1, color1);
+          result[theorem48NodeIndex(a2 + 1, color1)] = theorem48NodeIndex(2, color1);
+        }
+      } else if (analysis.caseNumber === 2) {
+        const { a } = analysis.parameters;
+        for (let shift = 0; shift < d_global; shift += 1) {
+          const color1 = theorem48ShiftColor(1, shift);
+          const color2 = theorem48ShiftColor(2, shift);
+          result[theorem48NodeIndex(a + 1, color2)] = theorem48NodeIndex(1, color1);
+          result[theorem48NodeIndex(1, color1)] = theorem48NodeIndex(2, color2);
+        }
+      }
+
+      if (!isPermutation(result)) {
+        throw new Error(`Theorem 4.8 Case ${analysis.caseNumber} did not produce a permutation.`);
+      }
+
+      const blocks = permutationCycles(result)
+        .map(block => block.slice().sort((a, b) => a - b))
+        .sort((a, b) => a[0] - b[0]);
+      const checks = {
+        noncrossing: isNoncrossingBlocks(blocks),
+        kDivisible: blocks.every(block => block.length % k_global === 0),
+        colorSymmetric: isColorSymmetricPartition(blocks)
+      };
+      if (!checks.noncrossing || !checks.kDivisible || !checks.colorSymmetric) {
+        throw new Error(`Theorem 4.8 Case ${analysis.caseNumber} failed a partition invariant.`);
+      }
+
+      const nextAnalysis = analyzeTheorem48Case(result);
+      if (!nextAnalysis.applicable) {
+        throw new Error("The K action left the positive/full-support domain unexpectedly.");
+      }
+
+      return {
+        permutation: result,
+        blocks,
+        caseNumber: analysis.caseNumber,
+        parameters: analysis.parameters || null,
+        summary: analysis.summary,
+        nextCaseNumber: nextAnalysis.caseNumber,
+        checks
+      };
+    }
+
+    function clearKActionState() {
+      kActionPermutation = null;
+      kActionBlocks = null;
+      kActionInitialPermutation = null;
+      kActionStep = 0;
+      kActionLastCase = null;
+      kActionNextCase = null;
+      kActionIssue = "";
+    }
+
+    function currentMultichainHasFullSupport() {
+      if (!transformData || d_global < 2 || !transformData.deltaPermutations.length) return false;
+      // Proposition 4.1: π_k is full support iff the cycle of n^2 in π_k^{-1}c
+      // contains no element of a color other than 2.  The final delta factor is π_k^{-1}c.
+      const finalDelta = transformData.deltaPermutations[k_global - 1];
+      const nColorTwo = n_global + (n_global - 1);
+      return cycleContaining(finalDelta, nColorTwo).every(node =>
+        Math.floor(node / n_global) + 1 === 2
+      );
+    }
+
+    function resetKActionState() {
+      clearKActionState();
+      if (!transformData) return;
+      kActionPermutation = transformData.krewerasPermutation.slice();
+      kActionBlocks = transformData.krewerasBlocks.map(block => block.slice());
+      kActionInitialPermutation = kActionPermutation.slice();
+
+      // Check the explicit hypotheses of Theorem 4.8 before the full-support test,
+      // so the disabled-button explanation identifies the actual missing hypothesis.
+      if (k_global < 2 || d_global < 2) {
+        const domainAnalysis = analyzeTheorem48Case(kActionPermutation);
+        kActionIssue = domainAnalysis.reason;
+        return;
+      }
+
+      if (!currentMultichainHasFullSupport()) {
+        kActionIssue = "Theorem 4.8 applies only when πₖ has full support; this generated multichain does not satisfy that hypothesis.";
+        return;
+      }
+
+      const analysis = analyzeTheorem48Case(kActionPermutation);
+      if (analysis.applicable) {
+        kActionNextCase = analysis.caseNumber;
+      } else {
+        kActionIssue = analysis.reason;
+      }
+    }
+
+    function buildTransformData() {
+      const chainPermutations = [];
+      for (let step = 0; step < k_global; step += 1) {
+        const blocks = partitionAt(step).blocks(baseRank);
+        chainPermutations.push(blocksToPermutation(blocks, baseRank));
+      }
+
+      const coxeter = getCoxeterElement();
+      const deltaPermutations = [];
+      for (let step = 0; step < k_global - 1; step += 1) {
+        deltaPermutations.push(
+          composePermutations(inversePermutation(chainPermutations[step]), chainPermutations[step + 1])
+        );
+      }
+      deltaPermutations.push(
+        composePermutations(inversePermutation(chainPermutations[k_global - 1]), coxeter)
+      );
+
+      const M = k_global * N_global;
+      const shuffledPermutation = new Array(M);
+
+      // Position basePosition*k + layer puts the k subscripted copies of one original
+      // node next to one another, exactly in the clockwise shuffle order.
+      for (let basePosition = 0; basePosition < N_global; basePosition += 1) {
+        const internalNode = baseOrder[basePosition];
+        for (let layer = 0; layer < k_global; layer += 1) {
+          const targetInternal = deltaPermutations[layer][internalNode];
+          const targetBasePosition = baseRank[targetInternal];
+          shuffledPermutation[basePosition * k_global + layer] = targetBasePosition * k_global + layer;
+        }
+      }
+
+      if (!isPermutation(shuffledPermutation)) {
+        throw new Error("The shuffled map did not produce a valid permutation.");
+      }
+
+      const shuffledBlocks = permutationCycles(shuffledPermutation)
+        .map(block => block.slice().sort((a, b) => a - b))
+        .sort((a, b) => a[0] - b[0]);
+
+      // Prime nodes are placed immediately BEFORE their corresponding nonprime nodes.
+      // With C(i)=i+1 in the displayed circular order, K = C ∘ p^{-1}.
+      const shuffledInverse = inversePermutation(shuffledPermutation);
+      const krewerasPermutation = shuffledInverse.map(value => (value + 1) % M);
+      const krewerasBlocks = permutationCycles(krewerasPermutation)
+        .map(block => block.slice().sort((a, b) => a - b))
+        .sort((a, b) => a[0] - b[0]);
+
+      const overlayBlocks = [
+        ...shuffledBlocks.map(block => block.map(index => 2 * index + 1)),
+        ...krewerasBlocks.map(block => block.map(index => 2 * index))
+      ];
+
+      const checks = {
+        shuffledPermutation: isPermutation(shuffledPermutation),
+        shuffledNoncrossing: isNoncrossingBlocks(shuffledBlocks),
+        krewerasPermutation: isPermutation(krewerasPermutation),
+        krewerasNoncrossing: isNoncrossingBlocks(krewerasBlocks),
+        overlayNoncrossing: isNoncrossingBlocks(overlayBlocks),
+        blockIdentity: shuffledBlocks.length + krewerasBlocks.length === M + 1,
+        kDivisible: krewerasBlocks.every(block => block.length % k_global === 0)
+      };
+
+      if (!checks.shuffledNoncrossing || !checks.krewerasNoncrossing ||
+          !checks.overlayNoncrossing || !checks.kDivisible) {
+        throw new Error(
+          "The computed shuffle failed a noncrossing invariant. This usually indicates an invalid edited multichain."
+        );
+      }
+
+      return {
+        M,
+        chainPermutations,
+        deltaPermutations,
+        shuffledPermutation,
+        shuffledBlocks,
+        krewerasPermutation,
+        krewerasBlocks,
+        checks
+      };
+    }
+
+    // Public helper retained for compatibility with the previous file.
+    function getKrewerasBlocks(permutation = null) {
+      const source = permutation || (transformData && transformData.shuffledPermutation);
+      if (!source) return [];
+      const inverse = inversePermutation(source);
+      const complement = inverse.map(value => (value + 1) % source.length);
+      return permutationCycles(complement).map(block => block.slice().sort((a, b) => a - b));
+    }
+
+    function makeCanvas(cssSize, className = "") {
+      const canvas = document.createElement("canvas");
+      canvas.className = className;
+      const dpr = clamp(1, window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(cssSize * dpr);
+      canvas.height = Math.round(cssSize * dpr);
+      canvas.style.width = `${cssSize}px`;
+      canvas.style.height = `${cssSize}px`;
+      canvas.dataset.logicalSize = String(cssSize);
+      canvas.dataset.dpr = String(dpr);
+      const context = canvas.getContext("2d");
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.imageSmoothingEnabled = true;
+      return canvas;
+    }
+
+    function canvasContext(canvas) {
+      const context = canvas.getContext("2d");
+      const dpr = Number(canvas.dataset.dpr || 1);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return context;
+    }
+
+    function clearCanvas(context, size) {
+      context.save();
+      context.clearRect(0, 0, size, size);
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, size, size);
+      context.restore();
+    }
+
+    function circularPositions(count, cx, cy, radius, offset = -Math.PI / 2) {
+      return Array.from({ length: count }, (_, index) => {
+        const angle = offset + (index * TAU) / count;
+        return {
+          x: cx + radius * Math.cos(angle),
+          y: cy + radius * Math.sin(angle),
+          angle
+        };
+      });
+    }
+
+    function superscriptColor(superscript, alpha = 1, lightness = 43) {
+      const hue = mod(214 + (superscript - 1) * (360 / Math.max(1, d_global)), 360);
+      return `hsla(${hue}, 70%, ${lightness}%, ${alpha})`;
+    }
+
+    function layerColor(layer, alpha = 1, lightness = 45) {
+      const hue = mod(154 + layer * (285 / Math.max(1, k_global - 1)), 360);
+      return `hsla(${hue}, 65%, ${lightness}%, ${alpha})`;
+    }
+
+    function drawCircularGuide(context, cx, cy, radius, count, sectorLength, sectorLabels, alpha = 1) {
+      context.save();
+      context.globalAlpha = alpha;
+      context.beginPath();
+      context.arc(cx, cy, radius, 0, TAU);
+      context.strokeStyle = "rgba(88, 105, 133, 0.23)";
+      context.lineWidth = 1.15;
+      context.stroke();
+
+      if (sectorLength > 0 && sectorLabels.length > 1) {
+        context.setLineDash([3, 5]);
+        for (let sector = 0; sector < sectorLabels.length; sector += 1) {
+          const boundaryIndex = sector * sectorLength;
+          const boundaryAngle = -Math.PI / 2 + (boundaryIndex * TAU) / count;
+          context.beginPath();
+          context.moveTo(
+            cx + radius * 0.88 * Math.cos(boundaryAngle),
+            cy + radius * 0.88 * Math.sin(boundaryAngle)
+          );
+          context.lineTo(
+            cx + radius * 1.035 * Math.cos(boundaryAngle),
+            cy + radius * 1.035 * Math.sin(boundaryAngle)
+          );
+          context.strokeStyle = "rgba(88, 105, 133, 0.30)";
+          context.stroke();
+        }
+        context.setLineDash([]);
+
+      }
+      context.restore();
+    }
+
+    function drawBlockHull(context, block, positions, style) {
+      if (!block || block.length < 2) return;
+      const ordered = block.slice().sort((a, b) => a - b);
+      context.save();
+      context.globalAlpha = style.alpha ?? 1;
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      context.strokeStyle = style.stroke;
+      context.fillStyle = style.fill || "transparent";
+      context.lineWidth = style.lineWidth || 2;
+      if (style.dash) context.setLineDash(style.dash);
+
+      context.beginPath();
+      context.moveTo(positions[ordered[0]].x, positions[ordered[0]].y);
+      for (let i = 1; i < ordered.length; i += 1) {
+        context.lineTo(positions[ordered[i]].x, positions[ordered[i]].y);
+      }
+      if (ordered.length > 2) {
+        context.closePath();
+        if (style.fill) context.fill();
+      }
+      context.stroke();
+      context.restore();
+    }
+
+    function nodeMetadataFromBasePosition(basePosition) {
+      const internalNode = baseOrder[basePosition];
+      return {
+        internalNode,
+        value: (internalNode % n_global) + 1,
+        superscript: Math.floor(internalNode / n_global) + 1
+      };
+    }
+
+    function drawLabel(context, x, y, main, _colorClass, options = {}) {
+      const fontSize = options.fontSize || 10;
+      const prime = options.prime ? "′" : "";
+      context.save();
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.font = `${options.bold === false ? 550 : 720} ${fontSize}px Inter, system-ui, sans-serif`;
+      context.fillStyle = options.color || "#344054";
+      // The cyclic copy is encoded by the node color rather than a superscript.
+      context.fillText(`${main}${prime}`, x, y);
+      context.restore();
+    }
+
+    function drawNode(context, position, options = {}) {
+      const radius = options.radius || 4.6;
+      context.save();
+      context.beginPath();
+      context.arc(position.x, position.y, radius, 0, TAU);
+      context.fillStyle = options.fill || "#334155";
+      context.fill();
+      if (options.stroke) {
+        context.strokeStyle = options.stroke;
+        context.lineWidth = options.lineWidth || 1.2;
+        context.stroke();
+      }
+      if (options.halo) {
+        context.beginPath();
+        context.arc(position.x, position.y, radius + (options.haloGap || 2.1), 0, TAU);
+        context.strokeStyle = options.halo;
+        context.lineWidth = options.haloWidth || 1.15;
+        context.stroke();
+      }
+      if (options.selected) {
+        context.beginPath();
+        context.arc(position.x, position.y, radius + 4.2, 0, TAU);
+        context.strokeStyle = "rgba(220, 38, 38, 0.85)";
+        context.lineWidth = 2;
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    function chainCanvasSize() {
+      return Math.round(clamp(310, 255 + N_global * 4.2, 540));
+    }
+
+    function singleCanvasSize() {
+      return Math.round(clamp(560, 370 + (transformData ? transformData.M : k_global * N_global) * 5.4, 1120));
+    }
+
+    function drawPartition(canvas, blocks, step) {
+      const size = Number(canvas.dataset.logicalSize);
+      const context = canvasContext(canvas);
+      clearCanvas(context, size);
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = size / 2 - clamp(48, size * 0.13, 76);
+      const positionsByRank = circularPositions(N_global, cx, cy, radius);
+      const positionsByNode = new Array(N_global);
+      baseOrder.forEach((node, index) => { positionsByNode[node] = positionsByRank[index]; });
+
+      drawCircularGuide(context, cx, cy, radius, N_global, n_global, superscriptOrder);
+
+      const stroke = layerColor(step, 0.93, 39);
+      const fill = layerColor(step, 0.14, 55);
+      for (const block of blocks) {
+        const rankBlock = block.map(node => baseRank[node]);
+        drawBlockHull(context, rankBlock, positionsByRank, {
+          stroke,
+          fill,
+          lineWidth: 2.15
+        });
+      }
+
+      const nodeRadius = clamp(3.2, 6.2 - N_global / 95, 5.4);
+      const labelRadius = radius + clamp(20, size * 0.053, 30);
+      const labelFont = clamp(7.2, 12 - N_global / 36, 11.5);
+
+      for (let rank = 0; rank < N_global; rank += 1) {
+        const node = baseOrder[rank];
+        const meta = nodeMetadataFromBasePosition(rank);
+        const position = positionsByRank[rank];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, 1, 39),
+          stroke: "rgba(255,255,255,0.9)",
+          lineWidth: 1,
+          selected: Boolean(selectedNode && selectedNode.node === node)
+        });
+
+        const labelPosition = {
+          x: cx + labelRadius * Math.cos(position.angle),
+          y: cy + labelRadius * Math.sin(position.angle)
+        };
+        drawLabel(context, labelPosition.x, labelPosition.y, meta.value, meta.superscript, {
+          fontSize: labelFont,
+          color: superscriptColor(meta.superscript, 1, 34)
+        });
+      }
+
+      chainRenderCache[step] = { positionsByNode, radius, cx, cy, size };
+    }
+
+    function renderAll() {
+      chainContainer.innerHTML = "";
+      chainRenderCache = [];
+
+      for (let step = 0; step < k_global; step += 1) {
+        const dsu = partitionAt(step);
+        const blocks = dsu.blocks(baseRank);
+        const wrapper = document.createElement("article");
+        wrapper.className = "canvas-wrapper";
+
+        const head = document.createElement("div");
+        head.className = "card-head";
+        head.innerHTML = `
+          <div>
+            <h2 class="card-title">π<sub>${step + 1}</sub></h2>
+            <p class="card-kicker">Cumulative level ${step + 1} of ${k_global}</p>
+          </div>
+          <span class="block-badge">${blocks.length} block${blocks.length === 1 ? "" : "s"}</span>
+        `;
+
+        const scroller = document.createElement("div");
+        scroller.className = "canvas-scroll";
+        const canvas = makeCanvas(chainCanvasSize(), "chain-canvas");
+        canvas.dataset.step = String(step);
+        canvas.setAttribute("aria-label", `Noncrossing partition pi ${step + 1}`);
+        canvas.addEventListener("click", event => handleCanvasClick(event, canvas, step));
+
+        scroller.appendChild(canvas);
+        wrapper.append(head, scroller);
+        chainContainer.appendChild(wrapper);
+        drawPartition(canvas, blocks, step);
+      }
+    }
+
+    function pointerInLogicalCanvas(event, canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const size = Number(canvas.dataset.logicalSize);
+      return {
+        x: (event.clientX - rect.left) * (size / rect.width),
+        y: (event.clientY - rect.top) * (size / rect.height)
+      };
+    }
+
+    function handleCanvasClick(event, canvas, step) {
+      if (isAnimating) return;
+      const point = pointerInLogicalCanvas(event, canvas);
+      const cache = chainRenderCache[step];
+      if (!cache) return;
+
+      let clickedNode = null;
+      let bestDistance = Infinity;
+      for (let node = 0; node < N_global; node += 1) {
+        const position = cache.positionsByNode[node];
+        const distance = Math.hypot(point.x - position.x, point.y - position.y);
+        if (distance < bestDistance && distance <= 15) {
+          clickedNode = node;
+          bestDistance = distance;
+        }
+      }
+      if (clickedNode === null) return;
+
+      if (!selectedNode) {
+        selectedNode = { node: clickedNode, step };
+        renderAll();
+        const meta = nodeMetadataFromBasePosition(baseRank[clickedNode]);
+        setStatus(`Selected node ${meta.value} in color class ${meta.superscript}. Choose a second node in π${step + 1}.`, "info");
+        return;
+      }
+
+      const first = selectedNode.node;
+      selectedNode = null;
+      if (first === clickedNode) {
+        renderAll();
+        setStatus("Selection cleared.", "info");
+        return;
+      }
+      toggleConnection(first, clickedNode, step);
+    }
+
+    function expandedGraphAt(step) {
+      const adjacency = Array.from({ length: N_global }, () => []);
+      for (let s = 0; s <= step; s += 1) {
+        multichainEdges[s].forEach((edge, edgeIndex) => {
+          for (let shift = 0; shift < d_global; shift += 1) {
+            const u = rotateNode(edge[0], shift);
+            const v = rotateNode(edge[1], shift);
+            const record = { step: s, edgeIndex };
+            adjacency[u].push({ to: v, record });
+            adjacency[v].push({ to: u, record });
+          }
+        });
+      }
+      return adjacency;
+    }
+
+    function pathRecords(start, target, step) {
+      const adjacency = expandedGraphAt(step);
+      const queue = [start];
+      const visited = new Array(N_global).fill(false);
+      const parent = new Array(N_global).fill(null);
+      visited[start] = true;
+
+      for (let head = 0; head < queue.length; head += 1) {
+        const current = queue[head];
+        if (current === target) break;
+        for (const neighbor of adjacency[current]) {
+          if (visited[neighbor.to]) continue;
+          visited[neighbor.to] = true;
+          parent[neighbor.to] = { from: current, record: neighbor.record };
+          queue.push(neighbor.to);
+        }
+      }
+
+      if (!visited[target]) return [];
+      const records = [];
+      let current = target;
+      while (current !== start) {
+        const entry = parent[current];
+        if (!entry) return [];
+        records.push(entry.record);
+        current = entry.from;
+      }
+      return records;
+    }
+
+    function invalidateTransform(message = "The multichain changed. Apply δ + shuffle again.") {
+      transformData = null;
+      currentView = "chain";
+      clearKActionState();
+      singleCanvas = null;
+      singleContainer.innerHTML = "";
+      singleContainer.hidden = true;
+      chainContainer.classList.remove("is-background");
+      setPipeline("chain");
+      setStatus(message, "info");
+    }
+
+    function toggleConnection(u, v, step) {
+      const current = partitionAt(step);
+      if (current.find(u) !== current.find(v)) {
+        const edge = [u, v];
+        if (!isProposedEditValid(edge, step)) {
+          renderAll();
+          setStatus("That merge was blocked because a symmetric copy would create a crossing or duplicate edge.", "warning");
+          return;
+        }
+        multichainEdges[step].push(edge);
+        invalidateTransform("Blocks merged symmetrically. The transformed view was reset.");
+        renderAll();
+        return;
+      }
+
+      let removed = 0;
+      for (let safety = 0; safety < N_global * 2; safety += 1) {
+        const test = partitionAt(step);
+        if (test.find(u) !== test.find(v)) break;
+        const records = pathRecords(u, v, step);
+        if (!records.length) break;
+        records.sort((a, b) => (b.step - a.step) || (b.edgeIndex - a.edgeIndex));
+        const chosen = records[0];
+        multichainEdges[chosen.step].splice(chosen.edgeIndex, 1);
+        removed += 1;
+      }
+
+      invalidateTransform(
+        removed
+          ? `${removed} generating edge${removed === 1 ? "" : "s"} removed to separate the selected nodes.`
+          : "No removable generating path was found."
+      );
+      renderAll();
+    }
+
+    function buildSingleCard() {
+      singleContainer.innerHTML = "";
+      singleContainer.hidden = false;
+      singleContainer.classList.add("entering");
+
+      const wrapper = document.createElement("article");
+      wrapper.className = "canvas-wrapper single-card";
+      wrapper.innerHTML = `
+        <div class="card-head">
+          <div class="single-heading-wrap">
+            <h2 id="single-title" class="card-title">δ + shuffle Sf</h2>
+            <p id="single-subtitle" class="card-kicker"></p>
+          </div>
+          <div class="single-toolbar" aria-label="Transformed view controls">
+            <button id="view-shuffle-btn" class="btn-shuffle" type="button">Shuffle</button>
+            <button id="view-overlay-btn" class="btn-kreweras" type="button">K overlay</button>
+            <button id="view-final-btn" class="btn-final" type="button">Final ∇</button>
+            <button id="k-action-btn" class="btn-kreweras" type="button" disabled>Apply K action</button>
+          </div>
+        </div>
+        <div id="single-canvas-scroll" class="canvas-scroll"></div>
+        <div id="single-legend" class="legend"></div>
+        <div id="single-diagnostics" class="diagnostics"></div>
+      `;
+
+      singleContainer.appendChild(wrapper);
+
+      // Keep the label control with the transformed/Kreweras view controls.
+      const singleToolbar = wrapper.querySelector(".single-toolbar");
+      singleToolbar.appendChild(labelsButton);
+      labelsButton.hidden = false;
+
+      const scroller = wrapper.querySelector("#single-canvas-scroll");
+      singleLogicalSize = singleCanvasSize();
+      singleCanvas = makeCanvas(singleLogicalSize, "single-canvas");
+      singleCanvas.setAttribute("aria-label", "Transformed noncrossing partition");
+      scroller.appendChild(singleCanvas);
+
+      wrapper.querySelector("#view-shuffle-btn").addEventListener("click", drawShuffleFinal);
+      wrapper.querySelector("#view-overlay-btn").addEventListener("click", drawKrewerasSuperimposed);
+      wrapper.querySelector("#view-final-btn").addEventListener("click", drawKrewerasFinal);
+      wrapper.querySelector("#k-action-btn").addEventListener("click", applyFinalKAction);
+
+      updateKActionButton();
+      updateDiagnostics();
+      requestAnimationFrame(() => singleContainer.classList.remove("entering"));
+    }
+
+    function updateSingleText(title, subtitle, legendItems) {
+      const titleNode = document.getElementById("single-title");
+      const subtitleNode = document.getElementById("single-subtitle");
+      const legendNode = document.getElementById("single-legend");
+      if (titleNode) titleNode.textContent = title;
+      if (subtitleNode) subtitleNode.textContent = subtitle;
+      if (legendNode) {
+        legendNode.innerHTML = legendItems.map(item => `
+          <span class="legend-item">
+            <span class="legend-swatch ${item.className || ""}" style="${item.style || ""}"></span>
+            <span>${item.label}</span>
+          </span>
+        `).join("");
+      }
+    }
+
+    function nodeColorLegendItems() {
+      return superscriptOrder.map(colorClass => ({
+        label: `node color ${colorClass}`,
+        style: `background: ${superscriptColor(colorClass, 1, 43)};`
+      }));
+    }
+
+    function krewerasNodeLegendItem() {
+      const colors = superscriptOrder.map((colorClass, index) => {
+        const stop = superscriptOrder.length === 1
+          ? 0
+          : Math.round((index / (superscriptOrder.length - 1)) * 100);
+        return `${superscriptColor(colorClass, 1, 43)} ${stop}%`;
+      });
+      const background = colors.length === 1
+        ? colors[0].replace(/ 0%$/, "")
+        : `linear-gradient(90deg, ${colors.join(", ")})`;
+      return {
+        label: "Kreweras nodes: same colors, gold rim",
+        style: `background: ${background}; border: 2px solid rgba(218, 164, 42, 0.96);`
+      };
+    }
+
+    function theorem48CaseLabel(caseNumber) {
+      if (caseNumber === 0) return "Case 0 — clockwise rotation";
+      if (caseNumber === 1) return "Case 1 — two-block reconnection";
+      if (caseNumber === 2) return "Case 2 — boundary reconnection";
+      return "unavailable";
+    }
+
+    function updateKActionButton() {
+      const button = document.getElementById("k-action-btn");
+      if (!button) return;
+      const order = theorem48Order();
+      button.textContent = order > 0
+        ? `Apply K action · ${kActionStep}/${order}`
+        : "Apply K action";
+      button.disabled = isAnimating || currentView !== "final" ||
+        !kActionPermutation || Boolean(kActionIssue);
+      button.title = kActionIssue || (kActionNextCase == null
+        ? "Apply the positive Kreweras action from Theorem 4.8."
+        : `Next application: ${theorem48CaseLabel(kActionNextCase)} from Theorem 4.8.`);
+    }
+
+    function finalLegendItems() {
+      return [
+        { label: "final Kreweras hulls", className: "complement" },
+        ...nodeColorLegendItems(),
+        krewerasNodeLegendItem()
+      ];
+    }
+
+    function updateFinalViewText() {
+      if (!transformData) return;
+      const baseSubtitle = `${kActionBlocks ? kActionBlocks.length : transformData.krewerasBlocks.length} complement blocks on ${transformData.M} nodes after deleting the nonprime nodes; the shuffle colors are retained.`;
+      let subtitle = baseSubtitle;
+      if (kActionIssue) {
+        subtitle += ` Theorem 4.8 K action unavailable: ${kActionIssue}`;
+      } else if (kActionStep === 0) {
+        subtitle += ` Next K application uses ${theorem48CaseLabel(kActionNextCase)}.`;
+      } else {
+        subtitle = `K step ${kActionStep} of ${theorem48Order()}; the last application used ${theorem48CaseLabel(kActionLastCase)}, and the next uses ${theorem48CaseLabel(kActionNextCase)}.`;
+      }
+      updateSingleText(
+        kActionStep === 0
+          ? "Final ∇ image = K ∘ Sf ∘ Ω⁻¹ ∘ δ ∘ Ω"
+          : "Theorem 4.8 positive Kreweras action",
+        subtitle,
+        finalLegendItems()
+      );
+      updateKActionButton();
+    }
+
+    function updateDiagnostics() {
+      const node = document.getElementById("single-diagnostics");
+      if (!node || !transformData) return;
+      const labels = [
+        ["Shuffle is a permutation", transformData.checks.shuffledPermutation],
+        ["Shuffle is noncrossing", transformData.checks.shuffledNoncrossing],
+        ["K is noncrossing", transformData.checks.krewerasNoncrossing],
+        ["Interleaving is noncrossing", transformData.checks.overlayNoncrossing],
+        ["Final blocks are k-divisible", transformData.checks.kDivisible],
+        ["#blocks(p)+#blocks(K)=M+1", transformData.checks.blockIdentity]
+      ];
+      node.innerHTML = labels.map(([label, passed]) =>
+        `<span class="check-chip ${passed ? "" : "fail"}">${passed ? "✓" : "✕"} ${label}</span>`
+      ).join("");
+    }
+
+    function shuffledNodeMeta(index) {
+      const basePosition = Math.floor(index / k_global);
+      const layer = index % k_global;
+      const baseMeta = nodeMetadataFromBasePosition(basePosition);
+      return {
+        ...baseMeta,
+        layer,
+        shuffledValue: (baseMeta.value - 1) * k_global + layer + 1,
+        displayValue: useKNLabels ? (baseMeta.value - 1) * k_global + layer + 1 : baseMeta.value
+      };
+    }
+
+    function drawShuffle(progress = 1) {
+      if (!singleCanvas || !transformData) return;
+      const size = singleLogicalSize;
+      const context = canvasContext(singleCanvas);
+      clearCanvas(context, size);
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = size / 2 - clamp(60, size * 0.12, 92);
+      const positions = circularPositions(transformData.M, cx, cy, radius);
+      drawCircularGuide(context, cx, cy, radius, transformData.M, k_global * n_global, superscriptOrder, progress);
+
+      for (const block of transformData.shuffledBlocks) {
+        const layer = block[0] % k_global;
+        drawBlockHull(context, block, positions, {
+          stroke: layerColor(layer, 0.94, 38),
+          fill: layerColor(layer, 0.12, 56),
+          lineWidth: 2.15,
+          alpha: progress
+        });
+      }
+
+      const nodeRadius = clamp(2.5, 5.9 - transformData.M / 150, 5.1) * progress;
+      const labelRadius = radius + clamp(20, size * 0.042, 35);
+      const labelFont = clamp(6.2, 11.5 - transformData.M / 65, 10.5);
+
+      for (let index = 0; index < transformData.M; index += 1) {
+        const meta = shuffledNodeMeta(index);
+        const position = positions[index];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, progress, 39),
+          stroke: `rgba(255,255,255,${0.9 * progress})`,
+          lineWidth: 0.9
+        });
+
+        if (progress > 0.54) {
+          const alpha = clamp(0, (progress - 0.54) / 0.46, 1);
+          const labelPosition = {
+            x: cx + labelRadius * Math.cos(position.angle),
+            y: cy + labelRadius * Math.sin(position.angle)
+          };
+          drawLabel(context, labelPosition.x, labelPosition.y, meta.displayValue, meta.superscript, {
+            fontSize: labelFont,
+            color: superscriptColor(meta.superscript, alpha, 31)
+          });
+        }
+      }
+    }
+
+    function drawOverlay(progress = 1) {
+      if (!singleCanvas || !transformData) return;
+      const size = singleLogicalSize;
+      const context = canvasContext(singleCanvas);
+      clearCanvas(context, size);
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = size / 2 - clamp(66, size * 0.125, 98);
+      const interleaved = circularPositions(2 * transformData.M, cx, cy, radius);
+      const primePositions = Array.from({ length: transformData.M }, (_, i) => interleaved[2 * i]);
+      const originalPositions = Array.from({ length: transformData.M }, (_, i) => interleaved[2 * i + 1]);
+
+      drawCircularGuide(
+        context,
+        cx,
+        cy,
+        radius,
+        2 * transformData.M,
+        2 * k_global * n_global,
+        superscriptOrder
+      );
+
+      for (const block of transformData.shuffledBlocks) {
+        const layer = block[0] % k_global;
+        drawBlockHull(context, block, originalPositions, {
+          stroke: layerColor(layer, 0.78, 37),
+          fill: layerColor(layer, 0.075, 57),
+          lineWidth: 1.8,
+          alpha: 0.88
+        });
+      }
+
+      for (const block of transformData.krewerasBlocks) {
+        drawBlockHull(context, block, primePositions, {
+          stroke: "rgba(40, 99, 164, 0.96)",
+          fill: "rgba(230, 174, 49, 0.14)",
+          lineWidth: 2.25,
+          alpha: progress
+        });
+      }
+
+      const nodeRadius = clamp(2.35, 5.5 - transformData.M / 170, 4.8);
+      const labelRadiusOriginal = radius + clamp(23, size * 0.045, 38);
+      const labelRadiusPrime = radius + clamp(40, size * 0.071, 60);
+      const labelFont = clamp(6.1, 10.6 - transformData.M / 72, 9.8);
+
+      for (let index = 0; index < transformData.M; index += 1) {
+        const meta = shuffledNodeMeta(index);
+        const original = originalPositions[index];
+        const prime = primePositions[index];
+
+        drawNode(context, original, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, 0.96, 39),
+          stroke: "rgba(255,255,255,0.9)",
+          lineWidth: 0.8
+        });
+        drawNode(context, prime, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, progress, 43),
+          stroke: `rgba(40, 99, 164, ${progress})`,
+          lineWidth: 1.15,
+          halo: `rgba(218, 164, 42, ${0.96 * progress})`,
+          haloWidth: 1.15,
+          haloGap: 2.05
+        });
+
+        const originalLabel = {
+          x: cx + labelRadiusOriginal * Math.cos(original.angle),
+          y: cy + labelRadiusOriginal * Math.sin(original.angle)
+        };
+        const primeLabel = {
+          x: cx + labelRadiusPrime * Math.cos(prime.angle),
+          y: cy + labelRadiusPrime * Math.sin(prime.angle)
+        };
+        drawLabel(context, originalLabel.x, originalLabel.y, meta.displayValue, meta.superscript, {
+          fontSize: labelFont,
+          color: superscriptColor(meta.superscript, 0.94, 31)
+        });
+        drawLabel(context, primeLabel.x, primeLabel.y, meta.displayValue, meta.superscript, {
+          fontSize: labelFont,
+          prime: true,
+          color: superscriptColor(meta.superscript, progress, 31)
+        });
+      }
+    }
+
+    function interpolatePosition(from, to, t) {
+      return {
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t,
+        angle: to.angle
+      };
+    }
+
+    function drawFinalTransition(progress = 1) {
+      if (!singleCanvas || !transformData) return;
+      const size = singleLogicalSize;
+      const context = canvasContext(singleCanvas);
+      clearCanvas(context, size);
+
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = size / 2 - clamp(60, size * 0.12, 92);
+      const interleaved = circularPositions(2 * transformData.M, cx, cy, radius);
+      const originalPositions = Array.from({ length: transformData.M }, (_, i) => interleaved[2 * i + 1]);
+      const primeStart = Array.from({ length: transformData.M }, (_, i) => interleaved[2 * i]);
+      const finalPositions = circularPositions(transformData.M, cx, cy, radius);
+      const complementPositions = primeStart.map((position, index) =>
+        interpolatePosition(position, finalPositions[index], progress)
+      );
+
+      drawCircularGuide(
+        context,
+        cx,
+        cy,
+        radius,
+        transformData.M,
+        k_global * n_global,
+        superscriptOrder,
+        0.35 + 0.65 * progress
+      );
+
+      if (progress < 1) {
+        for (const block of transformData.shuffledBlocks) {
+          const layer = block[0] % k_global;
+          drawBlockHull(context, block, originalPositions, {
+            stroke: layerColor(layer, 0.72, 38),
+            fill: layerColor(layer, 0.06, 58),
+            lineWidth: 1.7,
+            alpha: 1 - progress
+          });
+        }
+      }
+
+      for (const block of transformData.krewerasBlocks) {
+        drawBlockHull(context, block, complementPositions, {
+          stroke: "rgba(40, 99, 164, 0.98)",
+          fill: "rgba(230, 174, 49, 0.16)",
+          lineWidth: 2.35,
+          alpha: 0.72 + 0.28 * progress
+        });
+      }
+
+      const nodeRadius = clamp(2.5, 5.9 - transformData.M / 150, 5.1);
+      const labelRadius = radius + clamp(22, size * 0.044, 37);
+      const labelFont = clamp(6.2, 11.2 - transformData.M / 68, 10.3);
+
+      for (let index = 0; index < transformData.M; index += 1) {
+        const meta = shuffledNodeMeta(index);
+        const position = complementPositions[index];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, 1, 43),
+          stroke: "rgba(40, 99, 164, 1)",
+          lineWidth: 1.15,
+          halo: "rgba(218, 164, 42, 0.98)",
+          haloWidth: 1.2,
+          haloGap: 2.05
+        });
+
+        const final = finalPositions[index];
+        const labelPosition = {
+          x: cx + labelRadius * Math.cos(final.angle),
+          y: cy + labelRadius * Math.sin(final.angle)
+        };
+        drawLabel(context, labelPosition.x, labelPosition.y, meta.displayValue, meta.superscript, {
+          fontSize: labelFont,
+          prime: progress < 0.5,
+          color: superscriptColor(meta.superscript, 1, 31)
+        });
+      }
+    }
+
+    function drawFinalBlocksAtPositions(context, blocks, positions, alpha = 1) {
+      for (const block of blocks) {
+        drawBlockHull(context, block, positions, {
+          stroke: "rgba(40, 99, 164, 0.98)",
+          fill: "rgba(230, 174, 49, 0.16)",
+          lineWidth: 2.35,
+          alpha
+        });
+      }
+    }
+
+    function drawFinalBoundary(context, size, radius, positions) {
+      const cx = size / 2;
+      const cy = size / 2;
+      const nodeRadius = clamp(2.5, 5.9 - transformData.M / 150, 5.1);
+      const labelRadius = radius + clamp(22, size * 0.044, 37);
+      const labelFont = clamp(6.2, 11.2 - transformData.M / 68, 10.3);
+
+      for (let index = 0; index < transformData.M; index += 1) {
+        const meta = shuffledNodeMeta(index);
+        const position = positions[index];
+        drawNode(context, position, {
+          radius: nodeRadius,
+          fill: superscriptColor(meta.superscript, 1, 43),
+          stroke: "rgba(40, 99, 164, 1)",
+          lineWidth: 1.15,
+          halo: "rgba(218, 164, 42, 0.98)",
+          haloWidth: 1.2,
+          haloGap: 2.05
+        });
+
+        const labelPosition = {
+          x: cx + labelRadius * Math.cos(position.angle),
+          y: cy + labelRadius * Math.sin(position.angle)
+        };
+        drawLabel(context, labelPosition.x, labelPosition.y, meta.displayValue, meta.superscript, {
+          fontSize: labelFont,
+          color: superscriptColor(meta.superscript, 1, 31)
+        });
+      }
+    }
+
+    function prepareFinalKCanvas() {
+      const size = singleLogicalSize;
+      const context = canvasContext(singleCanvas);
+      clearCanvas(context, size);
+      const cx = size / 2;
+      const cy = size / 2;
+      const radius = size / 2 - clamp(60, size * 0.12, 92);
+      const fixedPositions = circularPositions(transformData.M, cx, cy, radius);
+      drawCircularGuide(
+        context,
+        cx,
+        cy,
+        radius,
+        transformData.M,
+        k_global * n_global,
+        superscriptOrder
+      );
+      return { size, context, cx, cy, radius, fixedPositions };
+    }
+
+    function drawFinalKActionState(blocks = kActionBlocks) {
+      if (!singleCanvas || !transformData || !blocks) return;
+      const layout = prepareFinalKCanvas();
+      drawFinalBlocksAtPositions(layout.context, blocks, layout.fixedPositions, 1);
+      drawFinalBoundary(layout.context, layout.size, layout.radius, layout.fixedPositions);
+    }
+
+    function drawTheorem48Transition(progress, fromBlocks, toBlocks, caseNumber) {
+      if (!singleCanvas || !transformData) return;
+      const layout = prepareFinalKCanvas();
+      const oneStepAngle = TAU / transformData.M;
+
+      if (caseNumber === 0) {
+        const movingPositions = circularPositions(
+          transformData.M,
+          layout.cx,
+          layout.cy,
+          layout.radius,
+          -Math.PI / 2 + progress * oneStepAngle
+        );
+        drawFinalBlocksAtPositions(layout.context, fromBlocks, movingPositions, 1);
+      } else if (progress < 0.5) {
+        const local = progress / 0.5;
+        const movingPositions = circularPositions(
+          transformData.M,
+          layout.cx,
+          layout.cy,
+          layout.radius,
+          -Math.PI / 2 + local * oneStepAngle
+        );
+        drawFinalBlocksAtPositions(layout.context, fromBlocks, movingPositions, 1 - local);
+      } else {
+        const local = (progress - 0.5) / 0.5;
+        drawFinalBlocksAtPositions(layout.context, toBlocks, layout.fixedPositions, local);
+      }
+
+      drawFinalBoundary(layout.context, layout.size, layout.radius, layout.fixedPositions);
+    }
+
+    function formatTheorem48Parameters(result) {
+      if (result.caseNumber === 1 && result.parameters) {
+        const { a1, a2, a3, a4, j0 } = result.parameters;
+        return `a₁=${a1}, a₂=${a2}, a₃=${a3}, a₄=${a4}, j₀=${j0}`;
+      }
+      if (result.caseNumber === 2 && result.parameters) {
+        return `a=${result.parameters.a}`;
+      }
+      return "ordinary one-unit rotation";
+    }
+
+    function applyFinalKAction() {
+      if (!transformData || isAnimating || currentView !== "final" || !kActionPermutation) return;
+      if (kActionIssue) {
+        setStatus(kActionIssue, "warning");
+        return;
+      }
+
+      let result;
+      try {
+        result = applyTheorem48Kappa(kActionPermutation);
+      } catch (error) {
+        kActionIssue = error.message;
+        updateKActionButton();
+        setStatus(error.message, "error");
+        return;
+      }
+
+      const fromBlocks = kActionBlocks.map(block => block.slice());
+      const toBlocks = result.blocks.map(block => block.slice());
+      setStatus(
+        `Applying Theorem 4.8 ${theorem48CaseLabel(result.caseNumber)} (${formatTheorem48Parameters(result)})…`,
+        "info"
+      );
+
+      animate(result.caseNumber === 0 ? 520 : 680, progress => {
+        drawTheorem48Transition(progress, fromBlocks, toBlocks, result.caseNumber);
+      }, () => {
+        kActionPermutation = result.permutation;
+        kActionBlocks = result.blocks;
+        kActionLastCase = result.caseNumber;
+        kActionNextCase = result.nextCaseNumber;
+        kActionStep = mod(kActionStep + 1, theorem48Order());
+        drawFinalKActionState();
+        updateFinalViewText();
+
+        const atNominalReturn = kActionStep === 0;
+        const returnedExactly = atNominalReturn && arraysEqual(kActionPermutation, kActionInitialPermutation);
+        setStatus(
+          returnedExactly
+            ? `The positive Kreweras action completed its full order-${theorem48Order()} cycle and returned to the original final model.`
+            : `Applied ${theorem48CaseLabel(result.caseNumber)}. The model is now at K step ${kActionStep} of ${theorem48Order()}.`,
+          "success"
+        );
+      });
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function animate(duration, drawFrame, complete) {
+      if (REDUCED_MOTION || duration <= 0) {
+        drawFrame(1);
+        if (complete) complete();
+        return;
+      }
+      isAnimating = true;
+      setButtonsDisabled(true);
+      const start = performance.now();
+
+      function frame(now) {
+        const raw = clamp(0, (now - start) / duration, 1);
+        drawFrame(easeInOutCubic(raw));
+        if (raw < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          isAnimating = false;
+          setButtonsDisabled(false);
+          if (complete) complete();
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function animateNablaToSingleModel() {
+      if (isAnimating || !multichainEdges.length) return;
+      setStatus("Computing Ω, δ, and the shuffle permutation…", "info");
+
+      try {
+        transformData = buildTransformData();
+      } catch (error) {
+        transformData = null;
+        setStatus(error.message, "error");
+        return;
+      }
+
+      currentView = "shuffle";
+      clearKActionState();
+      buildSingleCard();
+      chainContainer.classList.add("is-background");
+      setPipeline("shuffle");
+      updateSingleText(
+        "δ + shuffle Sf",
+        `${transformData.M} nodes; each δ-factor remains on one subscript layer.`,
+        [
+          { label: "δ-factor layers", style: "background: linear-gradient(90deg, hsl(154 65% 45%), hsl(314 65% 45%));" },
+          ...nodeColorLegendItems()
+        ]
+      );
+
+      animate(850, drawShuffle, () => {
+        setStatus("Shuffle complete. The block permutation is retained exactly for the Kreweras step.", "success");
+        singleContainer.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "start" });
+      });
+    }
+
+    function drawShuffleFinal() {
+      if (!transformData || isAnimating) return;
+      currentView = "shuffle";
+      updateKActionButton();
+      setPipeline("shuffle");
+      updateSingleText(
+        "δ + shuffle Sf",
+        `${transformData.M} nodes; straight convex-hull boundaries preserve the noncrossing geometry.`,
+        [
+          { label: "δ-factor layers", style: "background: linear-gradient(90deg, hsl(154 65% 45%), hsl(314 65% 45%));" },
+          ...nodeColorLegendItems()
+        ]
+      );
+      animate(430, drawShuffle, () => setStatus("Showing the shuffled noncrossing partition.", "success"));
+    }
+
+    function drawKrewerasSuperimposed() {
+      if (!transformData || isAnimating) return;
+      currentView = "overlay";
+      updateKActionButton();
+      setPipeline("overlay");
+      updateSingleText(
+        "Kreweras complement: interleaved construction",
+        "Every prime node precedes its matching nonprime node. Both node sets retain the same cyclic color classes; Kreweras nodes have a gold rim.",
+        [
+          { label: "shuffled partition hulls", style: "background: linear-gradient(90deg, hsl(154 65% 45%), hsl(314 65% 45%));" },
+          ...nodeColorLegendItems(),
+          krewerasNodeLegendItem()
+        ]
+      );
+      animate(720, drawOverlay, () => {
+        setStatus("Kreweras overlay complete: the combined 2M-node partition passed the noncrossing check.", "success");
+      });
+    }
+
+    function drawKrewerasFinal() {
+      if (!transformData || isAnimating) return;
+      currentView = "final";
+      resetKActionState();
+      setPipeline("final");
+      updateFinalViewText();
+      animate(840, drawFinalTransition, () => {
+        drawFinalKActionState();
+        updateKActionButton();
+        setStatus(
+          kActionIssue
+            ? `Final ∇ model complete. ${kActionIssue}`
+            : `Final ∇ model complete. The next K application uses ${theorem48CaseLabel(kActionNextCase)} from Theorem 4.8.`,
+          kActionIssue ? "warning" : "success"
+        );
+      });
+    }
+
+    function redrawCurrentSingleView() {
+      if (!transformData || !singleCanvas) return;
+      if (currentView === "overlay") drawOverlay(1);
+      else if (currentView === "final") drawFinalKActionState();
+      else drawShuffle(1);
+    }
+
+    function toggleLabels() {
+      useKNLabels = !useKNLabels;
+      labelsButton.innerHTML = useKNLabels ? "Labels: 1…<i>kn</i>" : "Labels: 1…<i>n</i>";
+      redrawCurrentSingleView();
+      setStatus(
+        useKNLabels
+          ? "Showing the relabelled 1,…,kn values within each color sector."
+          : "Showing the original 1,…,n values; cyclic copies are encoded by node color.",
+        "info"
+      );
+    }
+
+    function readParameters() {
+      const d = Number.parseInt(document.getElementById("d_val").value, 10);
+      const n = Number.parseInt(document.getElementById("n_val").value, 10);
+      const k = Number.parseInt(document.getElementById("k_val").value, 10);
+      if (![d, n, k].every(Number.isFinite) || d < 1 || n < 1 || k < 1) {
+        throw new Error("d, n, and k must be positive integers.");
+      }
+      if (d * n > MAX_BASE_NODES) {
+        throw new Error(`This visualizer is limited to dn ≤ ${MAX_BASE_NODES} nodes per chain level.`);
+      }
+      if (d * n * k > MAX_SHUFFLED_NODES) {
+        throw new Error(`This visualizer is limited to kdn ≤ ${MAX_SHUFFLED_NODES} shuffled nodes.`);
+      }
+      return { d, n, k };
+    }
+
+    function generateMultichain() {
+      if (isAnimating) return;
+      let parameters;
+      try {
+        parameters = readParameters();
+      } catch (error) {
+        setStatus(error.message, "error");
+        return;
+      }
+
+      d_global = parameters.d;
+      n_global = parameters.n;
+      k_global = parameters.k;
+      N_global = d_global * n_global;
+
+      const orderData = buildBaseOrder(n_global, d_global);
+      baseOrder = orderData.order;
+      superscriptOrder = orderData.superscripts;
+      baseRank = buildRank(baseOrder, N_global);
+
+      selectedNode = null;
+      useKNLabels = false;
+      labelsButton.innerHTML = "Labels: 1…<i>n</i>";
+      transformData = null;
+      singleCanvas = null;
+      currentView = "chain";
+      clearKActionState();
+      singleContainer.hidden = true;
+      singleContainer.innerHTML = "";
+      chainContainer.classList.remove("is-background");
+
+      generateRandomMultichain();
+      renderAll();
+      setPipeline("chain");
+      setButtonsDisabled(false);
+      setStatus(
+        `Generated ${k_global} inclusion-ordered partition${k_global === 1 ? "" : "s"} on ${N_global} base nodes.`,
+        "success"
+      );
+    }
+
+    generateButton.addEventListener("click", generateMultichain);
+    shuffleButton.addEventListener("click", animateNablaToSingleModel);
+    labelsButton.addEventListener("click", toggleLabels);
+
+    window.generateMultichain = generateMultichain;
+    window.animateNablaToSingleModel = animateNablaToSingleModel;
+    window.drawKrewerasSuperimposed = drawKrewerasSuperimposed;
+    window.drawKrewerasFinal = drawKrewerasFinal;
+    window.applyFinalKAction = applyFinalKAction;
+    window.applyTheorem48Kappa = applyTheorem48Kappa;
+    window.analyzeTheorem48Case = analyzeTheorem48Case;
+    window.getKrewerasBlocks = getKrewerasBlocks;
+
+    window.addEventListener("load", generateMultichain);
+    window.addEventListener("resize", () => {
+      // Canvas coordinates are logical and CSS-scaled; a redraw keeps text crisp after zoom/layout changes.
+      renderAll();
+      redrawCurrentSingleView();
+    });
+  </script>
+</body>
+</html>
