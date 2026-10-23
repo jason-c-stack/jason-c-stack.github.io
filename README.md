@@ -1,6 +1,6 @@
 # Jason Stack — Research Website
 
-A static, responsive research portfolio prepared for GitHub Pages.
+A research portfolio prepared for GitHub Pages.
 
 ![Website preview](assets/site-preview.png)
 
